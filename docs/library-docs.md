@@ -1,47 +1,74 @@
 # Library Docs & Setup — Happit
 
 > The exact dependencies, why each is here, and the **precise** config each one needs.
-> Setup snippets below are verified against current (SDK 54–era) docs. When you touch a
-> dependency, update this file. Anything not listed here should not be added without a
-> reason recorded in [architecture.md](./architecture.md).
+> This project is **Expo SDK 57** (React 19.2, RN 0.86). `package.json` is the source of
+> truth for versions. When you touch a dependency, update this file. Anything not listed
+> here should not be added without a reason recorded in [architecture.md](./architecture.md).
 
-> ⚠️ **Pin versions when you install.** Run the install commands, then write the resolved
-> versions into the "Version" column so future work is reproducible. Prefer
-> `npx expo install` for anything Expo-managed — it picks SDK-compatible versions.
+> ⚠️ **Read the real API from `opensrc` before wiring any library** (see
+> [../AGENTS.md](../AGENTS.md)) — do not trust training recall. Prefer `npx expo install`
+> for Expo-managed packages so they stay SDK-57-compatible.
 
 ---
 
 ## 1. Dependency list
 
-| Package | Purpose | Version (fill in) |
+### 1a. Already installed (in `package.json`)
+
+| Package | Version | Purpose / keep? |
 | --- | --- | --- |
-| `expo` | Framework (SDK 54) | `__` |
-| `expo-router` | File-based navigation, typed routes | `__` |
-| `react-native-safe-area-context` | Safe areas (peer of router) | `__` |
-| `react-native-screens` | Native screens (peer of router) | `__` |
-| `nativewind` | Tailwind styling for RN | `4.x` |
-| `tailwindcss` | Tailwind engine (NativeWind v4 peer) | `3.4.x` |
-| `expo-sqlite` | On-device SQL database | `__` |
-| `drizzle-orm` | Type-safe ORM + `useLiveQuery` | `__` |
-| `drizzle-kit` (dev) | Migration generator | `__` |
-| `react-native-reanimated` | Spring/morph animations | `~4.x` |
-| `react-native-gesture-handler` | Gestures (reorder, press) | `__` |
-| `expo-haptics` | Haptic feedback tokens | `__` |
-| `date-fns` | Date math | `__` |
-| `zustand` | Preference state | `__` |
-| `babel-plugin-module-resolver` (dev) | `@/` path alias | `__` |
-| `jest-expo`, `jest` (dev) | Testing | `__` |
-| `eslint-config-expo`, `prettier` (dev) | Lint/format | `__` |
+| `expo` | ~57.0.8 | Framework (SDK 57) — keep |
+| `expo-router` | ~57.0.8 | File-based navigation, typed routes — keep |
+| `expo-constants` | ~57.0.7 | keep |
+| `expo-linking` | ~57.0.4 | deep links — keep |
+| `expo-splash-screen` | ~57.0.5 | keep |
+| `expo-status-bar` | ~57.0.1 | keep |
+| `expo-system-ui` | ~57.0.1 | keep |
+| `expo-font` | ~57.0.1 | keep (custom/display fonts later) |
+| `expo-device` | ~57.0.1 | keep (mid-range perf checks) |
+| `expo-web-browser` | ~57.0.2 | keep only if used (about/links) |
+| `react` / `react-dom` | 19.2.3 | keep |
+| `react-native` | 0.86.0 | keep |
+| `react-native-reanimated` | 4.5.0 | Expressive motion — keep |
+| `react-native-worklets` | 0.10.0 | reanimated 4 worklet runtime — keep |
+| `react-native-gesture-handler` | ~2.32.0 | gestures (reorder, press) — keep |
+| `react-native-safe-area-context` | ~5.7.0 | safe areas — keep |
+| `react-native-screens` | ~4.26.0 | native screens — keep |
+| `react-native-web` | ~0.21.0 | present; web is **not** a supported target |
+| `@expo/ui` | ~57.0.7 | ❌ **remove** — native UI, not our custom-M3 plan |
+| `expo-glass-effect` | ~57.0.1 | ❌ **remove** — liquid-glass, not our plan |
+| `expo-image` | ~57.0.1 | keep only if we need remote/optimized images (unlikely v1) |
+| `expo-symbols` | ~57.0.1 | keep **only** for native-tab SF Symbols; not for content UI |
+| `typescript` | ~6.0.3 | keep |
+| `@types/react` | ~19.2.2 | keep |
+
+> `react-native-reanimated@4` requires `react-native-worklets` (already present) and its
+> babel plugin is now `react-native-worklets/plugin` — verify against opensrc when wiring.
+
+### 1b. To add (per the plan)
+
+| Package | Purpose | Install with |
+| --- | --- | --- |
+| `nativewind` (4.x) | Tailwind styling for RN | `npm i nativewind` |
+| `tailwindcss` (3.4.x) | NativeWind v4 peer | `npm i -D tailwindcss@3` |
+| `expo-sqlite` | On-device SQL DB | `npx expo install expo-sqlite` |
+| `drizzle-orm` | ORM + `useLiveQuery` | `npm i drizzle-orm` |
+| `drizzle-kit` (dev) | Migration generator | `npm i -D drizzle-kit` |
+| `expo-haptics` | Haptic tokens | `npx expo install expo-haptics` |
+| `date-fns` | Date math | `npm i date-fns` |
+| `zustand` | Preference state | `npm i zustand` |
+| `babel-plugin-module-resolver` (dev) | `@/` alias | `npm i -D babel-plugin-module-resolver` |
+| `jest-expo`, `jest` (dev) | Testing | `npm i -D jest-expo jest` |
+| `prettier` (dev) | Format (`expo lint` already wired) | `npm i -D prettier` |
 
 Optional / on-demand: `date-fns-tz` (only if a real tz need appears), `drizzle-studio-expo`
 (dev DB inspector).
 
-Install (Expo picks compatible versions):
-```bash
-npx expo install expo-router react-native-safe-area-context react-native-screens expo-sqlite react-native-reanimated react-native-gesture-handler expo-haptics
-npm i nativewind zustand date-fns drizzle-orm
-npm i -D tailwindcss@3 drizzle-kit babel-plugin-module-resolver jest-expo prettier eslint-config-expo
-```
+> **Cached in opensrc at project versions:** `expo@57.0.8`, `expo-sqlite@57.0.1`,
+> `expo-haptics@57.0.1`, `nativewind@4.2.6`, `zustand@5.0.14`, `drizzle-orm@0.45.2`,
+> `drizzle-kit@0.31.10`, `date-fns` (GitHub main). Read their real API from source before
+> use. (Some Expo/RN modules were still being fetched at doc-time — run `opensrc fetch`
+> as needed.)
 
 ---
 
@@ -127,11 +154,15 @@ module.exports = function (api) {
     presets: [['babel-preset-expo', { jsxImportSource: 'nativewind' }], 'nativewind/babel'],
     plugins: [
       ['module-resolver', { alias: { '@': './src' } }],
-      'react-native-reanimated/plugin', // MUST be last
+      'react-native-worklets/plugin', // MUST be last (Reanimated 4 — verified from source)
     ],
   };
 };
 ```
+> **Reanimated 4 note:** the babel plugin moved from `react-native-reanimated/plugin` to
+> **`react-native-worklets/plugin`** (verified against the installed
+> `react-native-worklets@0.10.0` source — it publishes `plugin/index.js`). Use the worklets
+> path; the old reanimated path is for v3.
 
 **`metro.config.js`**
 ```js
@@ -145,8 +176,8 @@ module.exports = withNativeWind(config, { input: './global.css' });
 **`app.json`** — web bundler must be `metro` if web ever runs; import `global.css` once in
 the root layout (`import '../global.css'`).
 
-> Gotchas: `reanimated/plugin` must be the **last** babel plugin. After changing any of
-> these four files, restart Metro with `--clear`. If `className` "does nothing", it's
+> Gotchas: `react-native-worklets/plugin` must be the **last** babel plugin. After changing
+> any of these four files, restart Metro with `--clear`. If `className` "does nothing", it's
 > almost always a missing preset, wrong content glob, or stale cache.
 
 ## 4. expo-sqlite + Drizzle ORM
@@ -209,7 +240,7 @@ const { data } = useLiveQuery(db.select().from(habits));
 
 - `react-native-gesture-handler` must be imported at the very top of the app entry, and the
   app wrapped in `<GestureHandlerRootView style={{ flex: 1 }}>` (in root `_layout.tsx`).
-- `react-native-reanimated/plugin` is the **last** babel plugin (see §3).
+- `react-native-worklets/plugin` is the **last** babel plugin (Reanimated 4 — see §3).
 - All motion presets (springs/timings) live in `src/theme/motion.ts` mirroring
   [ui-tokens.md](./ui-tokens.md) §6. Components import presets; no inline configs.
 - Honor reduced motion via `useReducedMotion()` from reanimated.

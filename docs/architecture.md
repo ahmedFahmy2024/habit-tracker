@@ -12,19 +12,31 @@ Related: [project-overview.md](./project-overview.md) (scope) ·
 
 ## 1. Stack (decided)
 
+> Versions track the **installed project** — Expo **SDK 57**, React **19.2**, React Native
+> **0.86**, Reanimated **4.5**. `package.json` is the source of truth; see
+> [library-docs.md](./library-docs.md) for the full pinned table. The repo is **already
+> scaffolded** (Expo Router app), so Phase 0 is reconciliation, not `create-expo-app`.
+
 | Concern | Choice | Why |
 | --- | --- | --- |
-| Framework | **Expo (SDK 54)**, React Native, TypeScript | Managed workflow, OTA, native modules without ejecting. |
+| Framework | **Expo (SDK 57)**, React Native 0.86, React 19.2, TypeScript | Managed workflow, OTA, native modules without ejecting. |
 | Navigation | **Expo Router** (file-based, typed routes) | File = route. Native bottom tabs. Type-safe links. |
 | Styling | **NativeWind v4** + custom Material 3 tokens | Tailwind DX; tokens wired as CSS variables so light/dark is one switch. |
 | Local DB | **expo-sqlite** | On-device SQL, fast, DevTools inspector. |
 | ORM / queries | **Drizzle ORM** (`drizzle-orm/expo-sqlite`) | Type-safe schema + `useLiveQuery` reactive reads. |
 | Migrations | **drizzle-kit** → `useMigrations` at boot | Versioned schema, survives app updates. |
-| Animation | **react-native-reanimated** v4 + **gesture-handler** | Required for the Expressive spring/morph motion. |
+| Animation | **react-native-reanimated** 4.5 (+ `react-native-worklets`) + **gesture-handler** | Required for the Expressive spring/morph motion. |
 | Dates | **date-fns** (+ `date-fns-tz` if needed) | Deterministic, tree-shakeable date math. |
 | State (UI) | React state + Drizzle live queries; **zustand** for cross-screen prefs | Server-state = the DB. UI/pref state = zustand. No Redux. |
 
 There is **no** backend, API layer, auth, or network client. Do not add one.
+
+**UI direction (decided):** we hand-build the Material 3 Expressive system with **NativeWind
++ custom tokens** ([ui-rules.md](./ui-rules.md), [ui-tokens.md](./ui-tokens.md)). The
+scaffold currently includes `@expo/ui`, `expo-glass-effect`, and `expo-symbols` — these are
+**not part of the v1 plan** and should be removed (or left unused) rather than mixed into
+the custom system. `expo-symbols`/SF Symbols may stay only if used purely for native-tab
+icons; do not build content UI on the native/glass components.
 
 ## 2. Guiding architectural principles
 

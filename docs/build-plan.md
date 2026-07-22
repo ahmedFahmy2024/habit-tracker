@@ -15,18 +15,23 @@ Scope reference: [project-overview.md](./project-overview.md). Every task obeys
 **Goal:** an app that boots on device with the full toolchain wired, showing a themed
 "hello".
 
+> **Note:** the repo is **already an Expo SDK 57 Expo Router app** — do NOT run
+> `create-expo-app`. Phase 0 is reconciling the existing scaffold to the plan.
+
 Tasks:
-- [ ] `npx create-expo-app` (TypeScript, SDK 54) + strip boilerplate.
-- [ ] Install deps per [library-docs.md](./library-docs.md) §1; pin resolved versions back
-      into that table.
-- [ ] Configure the four NativeWind files + `@/` alias + reanimated plugin
-      ([library-docs.md](./library-docs.md) §3).
-- [ ] Set up ESLint/Prettier, `tsconfig` strict, path alias.
+- [x] Expo Router app scaffolded (SDK 57, TS). *(already present)*
+- [ ] Strip starter boilerplate down to our route structure
+      ([architecture.md](./architecture.md) §3).
+- [ ] Add the "to add" deps per [library-docs.md](./library-docs.md) §1b; remove the ones
+      marked ❌ (`@expo/ui`, `expo-glass-effect`) — we build custom M3, not native/glass.
+- [ ] Configure the four NativeWind files + `@/` alias + **`react-native-worklets/plugin`**
+      (Reanimated 4, must be last) ([library-docs.md](./library-docs.md) §3).
+- [ ] Prettier config; strict `tsconfig`; path alias. (`expo lint` already wired.)
 - [ ] `GestureHandlerRootView` + `import '../global.css'` in root `_layout.tsx`.
-- [ ] Enable `typedRoutes`.
+- [ ] Enable `typedRoutes` in `app.json`.
 
 **Done when:** app runs on iOS + Android, a `className="bg-surface"` element renders and
-flips with a manual dark-mode toggle, no red-box, `expo-doctor` clean.
+flips with a manual dark-mode toggle, no red-box, `npx expo-doctor` clean.
 
 ---
 

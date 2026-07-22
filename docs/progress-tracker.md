@@ -6,7 +6,7 @@
 
 **Legend:** ⬜ not started · 🟨 in progress · ✅ done · ⛔ blocked
 
-Last updated: _2026-07-22 — docs authored, no code yet._
+Last updated: _2026-07-22 — docs authored & reconciled to the real SDK-57 project; scaffold exists, feature code not yet started._
 
 ---
 
@@ -14,7 +14,7 @@ Last updated: _2026-07-22 — docs authored, no code yet._
 
 | Phase | Title | Status |
 | --- | --- | --- |
-| 0 | Project scaffold & tooling | ⬜ |
+| 0 | Project scaffold & tooling | 🟨 |
 | 1 | Design system foundation | ⬜ |
 | 2 | Data layer (DB, schema, migrations, domain) | ⬜ |
 | 3 | Navigation shell | ⬜ |
@@ -26,11 +26,12 @@ Last updated: _2026-07-22 — docs authored, no code yet._
 
 ---
 
-## Phase 0 — Scaffold & tooling ⬜
-- [ ] create-expo-app (SDK 54, TS)
-- [ ] deps installed + versions pinned in library-docs §1
-- [ ] NativeWind 4 files + `@/` alias + reanimated plugin
-- [ ] ESLint/Prettier + strict tsconfig
+## Phase 0 — Scaffold & tooling 🟨
+- [x] Expo Router app scaffolded (SDK 57, TS) — *already present, not create-expo-app*
+- [ ] strip starter boilerplate to our route structure
+- [ ] add §1b deps; remove ❌ `@expo/ui` + `expo-glass-effect`
+- [ ] NativeWind 4 files + `@/` alias + **`react-native-worklets/plugin`** (last)
+- [ ] Prettier + strict tsconfig (expo lint already wired)
 - [ ] GestureHandlerRoot + global.css import + typedRoutes
 - [ ] **Done-when:** boots iOS+Android, themed element flips dark, expo-doctor clean
 
@@ -107,6 +108,14 @@ _Record any deviation from the docs here, with a date and reason, so the docs st
 
 - **2026-07-22** — Stack locked: expo-sqlite + Drizzle (local-only, no auth/network);
   NativeWind v4 + custom M3 Expressive tokens; Expo Router file-based + native tabs.
+- **2026-07-22** — Reconciled docs to the **real project: Expo SDK 57** (React 19.2, RN
+  0.86, Reanimated 4.5), not the SDK-54 assumption. Repo is already scaffolded.
+- **2026-07-22** — UI direction decided: **custom NativeWind M3**, not native/glass.
+  `@expo/ui` + `expo-glass-effect` to be **removed**; `expo-symbols` allowed only for
+  native-tab icons.
+- **2026-07-22** — Reanimated 4 babel plugin is **`react-native-worklets/plugin`** (verified
+  from installed `react-native-worklets@0.10.0` source), not `react-native-reanimated/plugin`.
+- **2026-07-22** — Adopted **opensrc-first** source-of-truth rule ([../AGENTS.md](../AGENTS.md)).
 
 ## Open questions / parking lot
 - [ ] Finalize the accent source color → regenerate M3 palette hex in ui-tokens §1.2.
