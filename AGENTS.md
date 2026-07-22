@@ -85,6 +85,54 @@ clone from another project's cache.
 
 ---
 
+## 🤝 Phase handoffs — document every finished phase
+
+The build proceeds in phases ([docs/build-plan.md](docs/build-plan.md)). **When a phase's
+"done-when" bar is met, before ending the session, write a handoff file** so the next
+session (which starts cold) has an accurate overview of what exists and what's next.
+
+- **Location:** `docs/handoffs/phase-<N>-<slug>.md` (e.g. `docs/handoffs/phase-0-scaffold.md`).
+- **One file per phase.** Never overwrite an earlier phase's handoff; each is a permanent
+  record. Correct a phase's handoff only if that phase's facts later change.
+- After writing it, add a one-line pointer to the index in
+  [docs/handoffs/README.md](docs/handoffs/README.md) and update
+  [docs/progress-tracker.md](docs/progress-tracker.md).
+
+### Handoff template (fill every section — no vague points)
+
+```markdown
+# Phase <N> Handoff — <Title>
+
+**Status:** ✅ complete · **Date:** <YYYY-MM-DD>
+**Verified by:** <tsc / expo-doctor / lint / bundle / tests — with results>
+
+## What this phase delivered
+- Bullet list of concrete outcomes (files, features, config), each mapped to a build-plan task.
+
+## Key files added/changed
+- `path/to/file` — one line on its role.
+
+## Decisions made (and why)
+- Decision → rationale. Note any deviation from the docs and where the docs were updated.
+
+## Gotchas / things the next agent must know
+- Anything surprising: version quirks, APIs verified from source, workarounds, TODOs left.
+
+## What is NOT done yet (deferred)
+- Explicitly list anything a reader might assume is done but isn't.
+
+## Next phase
+- Phase <N+1>: <name> — the goal and its first concrete tasks (from build-plan.md).
+```
+
+### Starting a new session for the next phase
+
+Before building phase N, **read the prior phase handoffs** (at minimum N-1, plus phase 0
+for the foundation) so you inherit the context. State in your opening which phase you're
+starting and which handoffs you read. Do not re-derive settled decisions — they're recorded.
+
+---
+
 ## 📚 Project docs
 
 The `docs/` folder is the source of truth for scope and design. Read the relevant doc
@@ -98,6 +146,8 @@ before working in its area, and update it when reality diverges:
 - [docs/library-docs.md](docs/library-docs.md) — pinned versions & verified setup
 - [docs/build-plan.md](docs/build-plan.md) · [docs/progress-tracker.md](docs/progress-tracker.md)
   — the plan & status
+- [docs/handoffs/](docs/handoffs/) — per-phase handoff records (read the prior phase's
+  before starting the next)
 
 ---
 
@@ -108,3 +158,5 @@ before working in its area, and update it when reality diverges:
    never trust raw training recall.
 3. Use **skills** (and `find-skills`) for setup tasks.
 4. Keep `docs/` truthful.
+5. **Finish a phase → write `docs/handoffs/phase-<N>-<slug>.md`.** Start a phase → read the
+   prior handoffs first.

@@ -61,5 +61,34 @@ export const stagger = {
   max: 240,
 } as const;
 
+// docs/ui-tokens.md §8 — z-index / layering
+export const z = {
+  base: 0,
+  sticky: 10,
+  fab: 20,
+  overlay: 30,
+  modal: 40,
+  toast: 50,
+} as const;
+
+// docs/ui-tokens.md §5 — shadows. M3 prefers tonal elevation; real shadow is reserved for
+// the FAB and active drag. RN shadow props (iOS) + elevation (Android) kept in sync.
+export const shadow = {
+  fab: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  dragged: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    elevation: 12,
+  },
+} as const;
+
 export type SpaceToken = keyof typeof space;
 export type RadiusToken = keyof typeof radius;

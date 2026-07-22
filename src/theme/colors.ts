@@ -3,7 +3,10 @@
  *
  * className-driven color (bg-surface, text-on-surface, …) is the primary path; this map is
  * only for places that need a raw value in JS: native tab bar tinting, reanimated animated
- * colors, and StatusBar. Keep it in sync with global.css.
+ * colors, StatusBar, and SVG/vector-icon `color` props. Keep it in sync with global.css.
+ *
+ * Every role from global.css is mirrored here so JS consumers have full parity with the
+ * className roles — no consumer has to fall back to an inline hex. (docs/ui-rules.md §1)
  */
 export const palette = {
   light: {
@@ -13,9 +16,14 @@ export const palette = {
     onPrimaryContainer: "#042100",
     secondary: "#55624c",
     onSecondary: "#ffffff",
+    secondaryContainer: "#d9e7cb",
+    onSecondaryContainer: "#131f0d",
     tertiary: "#386667",
+    onTertiary: "#ffffff",
     error: "#ba1a1a",
+    onError: "#ffffff",
     errorContainer: "#ffdad6",
+    onErrorContainer: "#410002",
     background: "#fdfcf5",
     onBackground: "#1a1c18",
     surface: "#fdfcf5",
@@ -23,8 +31,13 @@ export const palette = {
     onSurfaceVariant: "#43483e",
     outline: "#74796d",
     outlineVariant: "#c3c8bb",
+    surfaceContainerLowest: "#ffffff",
+    surfaceContainerLow: "#f4f4ec",
     surfaceContainer: "#eeeee6",
     surfaceContainerHigh: "#e8e9e1",
+    surfaceContainerHighest: "#e3e3db",
+    inverseSurface: "#2f312c",
+    inverseOnSurface: "#f1f1e9",
   },
   dark: {
     primary: "#9cd67d",
@@ -33,9 +46,14 @@ export const palette = {
     onPrimaryContainer: "#b7f397",
     secondary: "#bdcbb0",
     onSecondary: "#283420",
+    secondaryContainer: "#3e4a35",
+    onSecondaryContainer: "#d9e7cb",
     tertiary: "#a0cfd0",
+    onTertiary: "#003738",
     error: "#ffb4ab",
+    onError: "#690005",
     errorContainer: "#93000a",
+    onErrorContainer: "#ffdad6",
     background: "#1a1c18",
     onBackground: "#e3e3db",
     surface: "#1a1c18",
@@ -43,8 +61,13 @@ export const palette = {
     onSurfaceVariant: "#c3c8bb",
     outline: "#8d9285",
     outlineVariant: "#43483e",
+    surfaceContainerLowest: "#0f120d",
+    surfaceContainerLow: "#1a1c18",
     surfaceContainer: "#1e201c",
     surfaceContainerHigh: "#282b26",
+    surfaceContainerHighest: "#333630",
+    inverseSurface: "#e3e3db",
+    inverseOnSurface: "#2f312c",
   },
 } as const;
 

@@ -6,7 +6,10 @@
 
 **Legend:** ⬜ not started · 🟨 in progress · ✅ done · ⛔ blocked
 
-Last updated: _2026-07-22 — Phase 0 complete: scaffold stripped, NativeWind v4 + tokens wired, route skeleton building & bundling clean (expo-doctor 20/20)._
+Per-phase handoff records: [handoffs/](./handoffs/) (written at the end of each phase — see
+[../AGENTS.md](../AGENTS.md) § Phase handoffs).
+
+Last updated: _2026-07-22 — Phase 1 complete: theme built out (habitColors, motion + reduced-motion), lib helpers (haptics/id/strings/logger), and all 9 primitives + Icon; kitchen-sink screen. tsc/lint/expo-doctor clean, iOS bundle 1650 modules._
 
 ---
 
@@ -15,7 +18,7 @@ Last updated: _2026-07-22 — Phase 0 complete: scaffold stripped, NativeWind v4
 | Phase | Title | Status |
 | --- | --- | --- |
 | 0 | Project scaffold & tooling | ✅ |
-| 1 | Design system foundation | ⬜ |
+| 1 | Design system foundation | ✅ |
 | 2 | Data layer (DB, schema, migrations, domain) | ⬜ |
 | 3 | Navigation shell | ⬜ |
 | 4 | Create & manage habits | ⬜ |
@@ -37,15 +40,16 @@ Last updated: _2026-07-22 — Phase 0 complete: scaffold stripped, NativeWind v4
 - [x] **Done-when:** iOS bundle builds (1596 modules), `tsc` clean, **expo-doctor 20/20**.
       *(Live on-device dark-flip screenshot pending a simulator/device run.)*
 
-## Phase 1 — Design system foundation ⬜
-- [ ] tokens.ts + global.css variables
-- [ ] tailwind.config color/scale mirror
-- [ ] ThemeProvider/useTheme + habitColors
-- [ ] motion.ts presets + reduced-motion
-- [ ] haptics/id/strings libs
-- [ ] primitives: Text, Surface, Pressable, Button, IconButton, Chip, FAB, TextField, EmptyState
-- [ ] kitchen-sink screen
-- [ ] **Done-when:** primitives correct in both schemes; motion+haptics; registry statuses 🟢
+## Phase 1 — Design system foundation ✅
+- [x] tokens.ts + global.css variables *(done Phase 0; extended with `z` + `shadow` tokens)*
+- [x] tailwind.config color/scale mirror *(done Phase 0)*
+- [x] useTheme + `useHabitColors` + `habitColors.ts` palettes (8 keys × light/dark)
+- [x] motion.ts spring/timing presets + `useMotion()` reduced-motion wiring
+- [x] haptics/id/strings libs (+ logger); full-parity JS color mirror
+- [x] primitives: Icon, Text, Surface, Pressable, Button, IconButton, Chip, FAB, TextField, EmptyState
+- [x] kitchen-sink screen (`/kitchen-sink`, follows OS scheme)
+- [x] **Done-when:** tsc/lint/expo-doctor clean, iOS bundle builds; registry statuses 🟢.
+      *(On-device light/dark + reduced-motion visual sign-off pending a simulator run.)*
 
 ## Phase 2 — Data layer ⬜
 - [ ] schema.ts
@@ -118,8 +122,17 @@ _Record any deviation from the docs here, with a date and reason, so the docs st
 - **2026-07-22** — Reanimated 4 babel plugin is **`react-native-worklets/plugin`** (verified
   from installed `react-native-worklets@0.10.0` source), not `react-native-reanimated/plugin`.
 - **2026-07-22** — Adopted **opensrc-first** source-of-truth rule ([../AGENTS.md](../AGENTS.md)).
+- **2026-07-22 (Phase 1)** — Icon set = **`@expo/vector-icons` / `MaterialCommunityIcons`**
+  (cross-platform, typed glyphs); SF Symbols reserved for native tabs only.
+- **2026-07-22 (Phase 1)** — IDs via **`expo-crypto.randomUUID()`**, not npm `uuid`
+  (that build needs Node `crypto`, absent in RN).
+- **2026-07-22 (Phase 1)** — Reanimated shared values use **`.get()`/`.set()`** (not
+  `.value =`) for React-Compiler / `react-hooks/immutability` compatibility.
 
 ## Open questions / parking lot
-- [ ] Finalize the accent source color → regenerate M3 palette hex in ui-tokens §1.2.
-- [ ] Choose the icon set (SF Symbols on iOS + vector drawable set for Android/tabs).
+- [ ] Finalize the accent source color → regenerate M3 palette hex in ui-tokens §1.2
+      **and** the per-habit hexes in `src/theme/habitColors.ts`.
+- [x] ~~Choose the icon set~~ → `@expo/vector-icons`/MaterialCommunityIcons (Phase 1).
 - [ ] Confirm `NativeTabs` import path is still `unstable-native-tabs` at build time.
+- [ ] On-device visual sign-off of primitives (light/dark + reduced motion) via
+      `/kitchen-sink` — deferred from Phase 1 (headless env, no simulator).

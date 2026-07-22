@@ -14,49 +14,61 @@ Status legend: 🟢 built · 🟡 spec'd, not built · ⚪ future.
 
 ## Primitives (`src/ui/primitives/`)
 
-### `Text` 🟡
+> **Icon set (decided Phase 1):** primitives use **`@expo/vector-icons` →
+> `MaterialCommunityIcons`** via the `Icon` primitive below (works iOS/Android/web; best M3
+> fit). SF Symbols (`expo-symbols`) remain reserved for native-tab icons only.
+
+### `Icon` 🟢
+Single icon primitive over `@expo/vector-icons/MaterialCommunityIcons`.
+- **Props:** `name: IconName` (typed glyph union), `size?` (default 24),
+  `color?` (role token, default `onSurface`), `colorValue?` (raw override for on-accent icons).
+- **Rules:** the only way to render an icon. Color is a theme role or an explicit dynamic
+  value (habit accent) — never an inline hex.
+
+### `Text` 🟢
 Typed wrapper enforcing the type scale.
 - **Props:** `variant: 'display.medium' | 'headline.large' | … | 'label.small'` (see
   [ui-tokens.md](./ui-tokens.md) §2), `color?` (role token, default `onSurface`),
   `emphasized?: boolean`, plus RN `Text` props.
 - **Rules:** the *only* way to render text. Scales with dynamic type. No inline fontSize.
 
-### `Surface` 🟡
+### `Surface` 🟢
 Tonal container; the elevation primitive.
 - **Props:** `level: 0|1|2|3` (maps to `surfaceContainer*` + optional shadow),
   `radius?: keyof radius` (default `lg`), `padding?: keyof space`.
 - **Rules:** elevation via tone first (see [ui-tokens.md](./ui-tokens.md) §5).
 
-### `Pressable` 🟡
+### `Pressable` 🟢
 Base interactive wrapper. Everything tappable is built on this.
-- **Props:** `onPress`, `haptic?: keyof haptic` (default `press`), `scaleOnPress?: boolean`
-  (default true → `motion.scale.press`), `disabled?`, plus a11y props.
+- **Props:** `onPress`, `haptic?: keyof haptic | null` (default `press`),
+  `scaleOnPress?: boolean` (default true → `motion.scale.press`), `disabled?`,
+  `style?` (static container style, merged under the animated transform), plus a11y props.
 - **Rules:** applies press-in scale + haptic + honors reduced motion automatically. Ensures
   ≥48dp target via hitSlop.
 
-### `Button` 🟡
+### `Button` 🟢
 - **Variants:** `filled` (primary), `tonal` (primaryContainer), `outlined`, `text`.
 - **Props:** `variant`, `label`, `icon?`, `onPress`, `loading?`, `disabled?`, `fullWidth?`.
 - **Shape:** `full` (pill). **Type:** `label.large`. **Motion:** press scale + spring back.
 
-### `IconButton` 🟡
+### `IconButton` 🟢
 - **Props:** `icon`, `onPress`, `variant?: 'standard'|'tonal'|'filled'`, `size?`,
   `accessibilityLabel` (**required**).
 - 48dp target regardless of icon size.
 
-### `Chip` 🟡
+### `Chip` 🟢
 Selectable/filter chip (used for weekday & cadence selection).
 - **Props:** `label`, `selected?`, `onPress`, `icon?`.
 - **Rules:** selection morphs shape + fills `secondaryContainer` (not just border). Fires
   `haptic.select`.
 
-### `FAB` 🟡
+### `FAB` 🟢
 Floating action button — "add habit".
 - **Props:** `icon`, `onPress`, `label?` (extended FAB), `accessibilityLabel`.
 - **Shape:** `full` (or `lg` if extended). `elevation.3`. `z.fab`. Lower-right, safe-area
   aware.
 
-### `TextField` 🟡
+### `TextField` 🟢
 - **Props:** `value`, `onChangeText`, `label`, `placeholder?`, `error?`, `maxLength?`,
   `autoFocus?`.
 - M3 outlined style; label animates; error uses `error` role.
@@ -66,8 +78,8 @@ Circular completion indicator (Today header).
 - **Props:** `value: 0..1`, `size?`, `celebrateOn100?: boolean`.
 - **Motion:** animates fill on change; `motion.spring.bouncy` pop at 100% + `haptic.celebrate`.
 
-### `EmptyState` 🟡
-- **Props:** `glyph`, `title`, `body?`, `action?: { label, onPress }`.
+### `EmptyState` 🟢
+- **Props:** `glyph` (IconName), `title`, `body?`, `action?: { label, onPress }`.
 - Uses `headline.large` title. Never render a bare "no data" anywhere else — use this.
 
 ### `Sheet` / `Modal` 🟡

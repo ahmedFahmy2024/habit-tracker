@@ -182,6 +182,9 @@ only for the FAB and active drag.
 | `elevation.3` | `surfaceContainerHigh` | FAB shadow |
 | `elevation.dragged` | `surfaceContainerHighest` | pronounced (reorder) |
 
+The two real shadows (FAB, dragged) are `shadow.fab` / `shadow.dragged` in `src/theme/tokens.ts`
+— RN `shadow*` props (iOS) + `elevation` (Android) kept in sync. Everything else uses tone.
+
 ## 6. Motion
 
 Consumed via reanimated. Defined in `src/theme/motion.ts`. **No inline spring configs.**
