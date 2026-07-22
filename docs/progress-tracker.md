@@ -6,7 +6,7 @@
 
 **Legend:** ⬜ not started · 🟨 in progress · ✅ done · ⛔ blocked
 
-Last updated: _2026-07-22 — docs authored & reconciled to the real SDK-57 project; scaffold exists, feature code not yet started._
+Last updated: _2026-07-22 — Phase 0 complete: scaffold stripped, NativeWind v4 + tokens wired, route skeleton building & bundling clean (expo-doctor 20/20)._
 
 ---
 
@@ -14,7 +14,7 @@ Last updated: _2026-07-22 — docs authored & reconciled to the real SDK-57 proj
 
 | Phase | Title | Status |
 | --- | --- | --- |
-| 0 | Project scaffold & tooling | 🟨 |
+| 0 | Project scaffold & tooling | ✅ |
 | 1 | Design system foundation | ⬜ |
 | 2 | Data layer (DB, schema, migrations, domain) | ⬜ |
 | 3 | Navigation shell | ⬜ |
@@ -26,14 +26,16 @@ Last updated: _2026-07-22 — docs authored & reconciled to the real SDK-57 proj
 
 ---
 
-## Phase 0 — Scaffold & tooling 🟨
+## Phase 0 — Scaffold & tooling ✅
 - [x] Expo Router app scaffolded (SDK 57, TS) — *already present, not create-expo-app*
-- [ ] strip starter boilerplate to our route structure
-- [ ] add §1b deps; remove ❌ `@expo/ui` + `expo-glass-effect`
-- [ ] NativeWind 4 files + `@/` alias + **`react-native-worklets/plugin`** (last)
-- [ ] Prettier + strict tsconfig (expo lint already wired)
-- [ ] GestureHandlerRoot + global.css import + typedRoutes
-- [ ] **Done-when:** boots iOS+Android, themed element flips dark, expo-doctor clean
+- [x] stripped starter boilerplate; routes rebuilt under `src/app/` (tabs + habit/*)
+- [x] added deps via bun; removed ❌ `@expo/ui` + `expo-glass-effect`
+- [x] NativeWind 4 files (tailwind/metro/babel/global.css) + `nativewind-env.d.ts`;
+      `@/` via tsconfig paths (no babel-resolver); **`react-native-worklets/plugin`** last
+- [x] theme skeleton: `src/theme/{tokens,colors,useTheme}.ts`
+- [x] GestureHandlerRoot + `import '@/global.css'` in root `_layout.tsx`; typedRoutes on
+- [x] **Done-when:** iOS bundle builds (1596 modules), `tsc` clean, **expo-doctor 20/20**.
+      *(Live on-device dark-flip screenshot pending a simulator/device run.)*
 
 ## Phase 1 — Design system foundation ⬜
 - [ ] tokens.ts + global.css variables

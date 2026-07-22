@@ -54,21 +54,24 @@ icons; do not build content UI on the native/glass components.
 
 ## 3. Folder structure
 
+> **Note:** Expo Router auto-detects `src/app/` as the routes root (it exists in this repo),
+> so routes live under `src/app/`, not a top-level `app/`. Everything else in `src/` sits
+> alongside it.
+
 ```
 happit-tracker/
-├── app/                        # Expo Router routes ONLY. Thin screens.
-│   ├── _layout.tsx             # Root: providers (DB, theme, gesture-handler), migrations gate
-│   ├── (tabs)/
-│   │   ├── _layout.tsx         # Native bottom tabs
-│   │   ├── index.tsx           # Today screen
-│   │   ├── habits.tsx          # Habits list
-│   │   └── settings.tsx        # Settings
-│   ├── habit/
-│   │   ├── [id].tsx            # Habit detail (history)
-│   │   └── new.tsx             # Add habit (modal)
-│   └── +not-found.tsx
-│
 ├── src/
+│   ├── app/                    # Expo Router routes ONLY. Thin screens.
+│   │   ├── _layout.tsx         # Root: providers (gesture-handler, theme, migrations gate), imports global.css
+│   │   ├── (tabs)/
+│   │   │   ├── _layout.tsx     # Native bottom tabs
+│   │   │   ├── index.tsx       # Today screen
+│   │   │   ├── habits.tsx      # Habits list
+│   │   │   └── settings.tsx    # Settings
+│   │   └── habit/
+│   │       ├── [id].tsx        # Habit detail (history) — pushed
+│   │       └── new.tsx         # Add habit — modal
+│   ├── global.css              # @tailwind directives + M3 token CSS variables
 │   ├── db/
 │   │   ├── client.ts           # openDatabaseSync + drizzle() singleton
 │   │   ├── schema.ts           # Drizzle tables (the ONLY schema source)
@@ -83,20 +86,21 @@ happit-tracker/
 │   ├── ui/                     # Reusable components — see ui-registry.md
 │   │   ├── primitives/         # Button, Card, Chip, Surface, Text…
 │   │   └── habit/              # HabitCard, CheckControl, StreakBadge, Heatmap…
-│   ├── theme/                  # Tokens (mirrors ui-tokens.md), ThemeProvider, useTheme
+│   ├── theme/                  # tokens.ts, colors.ts, useTheme.ts (mirror ui-tokens.md)
 │   ├── store/                  # zustand stores (preferences)
 │   └── lib/                    # tiny helpers (dates, ids, haptics)
 │
 ├── docs/                       # These documents
+├── assets/                     # app icon, splash
 ├── drizzle.config.ts
 ├── tailwind.config.js
 ├── metro.config.js
 ├── babel.config.js
-├── global.css
+├── nativewind-env.d.ts
 └── app.json
 ```
 
-**Hard rule:** files under `app/` are *thin*. They compose components from `src/ui` and
+**Hard rule:** files under `src/app/` are *thin*. They compose components from `src/ui` and
 read data via hooks from `src/data`. No SQL, no business logic, no big `StyleSheet` blocks
 in route files.
 

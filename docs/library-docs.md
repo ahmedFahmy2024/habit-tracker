@@ -47,19 +47,30 @@
 
 ### 1b. To add (per the plan)
 
-| Package | Purpose | Install with |
-| --- | --- | --- |
-| `nativewind` (4.x) | Tailwind styling for RN | `npm i nativewind` |
-| `tailwindcss` (3.4.x) | NativeWind v4 peer | `npm i -D tailwindcss@3` |
-| `expo-sqlite` | On-device SQL DB | `npx expo install expo-sqlite` |
-| `drizzle-orm` | ORM + `useLiveQuery` | `npm i drizzle-orm` |
-| `drizzle-kit` (dev) | Migration generator | `npm i -D drizzle-kit` |
-| `expo-haptics` | Haptic tokens | `npx expo install expo-haptics` |
-| `date-fns` | Date math | `npm i date-fns` |
-| `zustand` | Preference state | `npm i zustand` |
-| `babel-plugin-module-resolver` (dev) | `@/` alias | `npm i -D babel-plugin-module-resolver` |
-| `jest-expo`, `jest` (dev) | Testing | `npm i -D jest-expo jest` |
-| `prettier` (dev) | Format (`expo lint` already wired) | `npm i -D prettier` |
+> **This repo uses `bun`** (`bun.lock`). Use `bun add` / `bunx expo install`, not npm.
+> The `@/*` alias is already in `tsconfig.json` (+ metro `isTsconfigPathsEnabled`), so
+> **no** `babel-plugin-module-resolver` is needed. Most of the row below is **already
+> installed** (Phase 0).
+
+| Package | Version | Purpose | Status |
+| --- | --- | --- | --- |
+| `nativewind` | 4.2.6 | Tailwind styling for RN | ✅ installed |
+| `tailwindcss` | 3.4.19 | NativeWind v4 peer | ✅ installed |
+| `expo-sqlite` | 57.0.1 | On-device SQL DB | ✅ installed |
+| `drizzle-orm` | 0.45.2 | ORM + `useLiveQuery` | ✅ installed |
+| `drizzle-kit` (dev) | 0.31.10 | Migration generator | ✅ installed |
+| `expo-haptics` | 57.0.1 | Haptic tokens | ✅ installed |
+| `date-fns` | 4.4.0 | Date math | ✅ installed |
+| `zustand` | 5.0.14 | Preference state | ✅ installed |
+| `prettier` (dev) | 3.9.6 | Format (`expo lint` already wired) | ✅ installed |
+| `jest-expo`, `jest` (dev) | — | Testing | ⬜ add in Phase 2 |
+
+Install commands used (for reference):
+```bash
+bun add nativewind@^4.1.23 tailwindcss@^3.4.17 drizzle-orm date-fns zustand
+bunx expo install expo-sqlite expo-haptics
+bun add -d drizzle-kit prettier
+```
 
 Optional / on-demand: `date-fns-tz` (only if a real tz need appears), `drizzle-studio-expo`
 (dev DB inspector).
@@ -117,8 +128,8 @@ Four files must all be correct or styles silently don't apply.
 ```js
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  darkMode: 'class', // required; we flip via StyleSheet flag / theme switch
-  content: ['./app/**/*.{js,jsx,ts,tsx}', './src/**/*.{js,jsx,ts,tsx}'],
+  darkMode: 'class', // required; we flip via the theme switch (useColorScheme)
+  content: ['./src/**/*.{js,jsx,ts,tsx}'], // routes live in src/app, code in src/*
   presets: [require('nativewind/preset')],
   theme: {
     extend: {
@@ -146,14 +157,14 @@ module.exports = {
 @tailwind utilities;
 ```
 
-**`babel.config.js`**
+**`babel.config.js`** — no `module-resolver`; the `@/*` alias is handled by `tsconfig.json`
+paths + metro's `isTsconfigPathsEnabled`.
 ```js
 module.exports = function (api) {
   api.cache(true);
   return {
     presets: [['babel-preset-expo', { jsxImportSource: 'nativewind' }], 'nativewind/babel'],
     plugins: [
-      ['module-resolver', { alias: { '@': './src' } }],
       'react-native-worklets/plugin', // MUST be last (Reanimated 4 — verified from source)
     ],
   };
@@ -162,19 +173,22 @@ module.exports = function (api) {
 > **Reanimated 4 note:** the babel plugin moved from `react-native-reanimated/plugin` to
 > **`react-native-worklets/plugin`** (verified against the installed
 > `react-native-worklets@0.10.0` source — it publishes `plugin/index.js`). Use the worklets
-> path; the old reanimated path is for v3.
+> path; the old reanimated path is for v3. `babel-preset-expo` also picks up
+> `experiments.reactCompiler: true` from app.json automatically — no extra plugin needed.
 
 **`metro.config.js`**
 ```js
 const { getDefaultConfig } = require('expo/metro-config');
 const { withNativeWind } = require('nativewind/metro');
 
-const config = getDefaultConfig(__dirname);
-module.exports = withNativeWind(config, { input: './global.css' });
+// isTsconfigPathsEnabled honors the `@/*` alias from tsconfig.json.
+const config = getDefaultConfig(__dirname, { isTsconfigPathsEnabled: true });
+module.exports = withNativeWind(config, { input: './src/global.css' });
 ```
 
-**`app.json`** — web bundler must be `metro` if web ever runs; import `global.css` once in
-the root layout (`import '../global.css'`).
+**CSS entry** — `src/global.css` holds the `@tailwind` directives + token variables; it is
+imported once as a side-effect in `src/app/_layout.tsx` (`import '@/global.css'`). A
+`declare module '*.css';` in `nativewind-env.d.ts` satisfies the TS side-effect import.
 
 > Gotchas: `react-native-worklets/plugin` must be the **last** babel plugin. After changing
 > any of these four files, restart Metro with `--clear`. If `className` "does nothing", it's

@@ -13,8 +13,9 @@ Related: [architecture.md](./architecture.md) (structure) · [ui-rules.md](./ui-
   No `any` — use `unknown` + narrowing. No `@ts-ignore` without a `// reason:` comment.
 - **ESLint** (`eslint-config-expo`) + **Prettier**. Formatting is not discussed in review;
   Prettier decides. Run on pre-commit.
-- **Path alias:** `@/` → `src/` (configured in `tsconfig` + `babel-plugin-module-resolver`
-  / metro). Import `@/domain/streak`, not `../../../domain/streak`.
+- **Path alias:** `@/` → `src/` (configured in `tsconfig.json` paths + metro
+  `isTsconfigPathsEnabled`; no babel plugin). Import `@/domain/streak`, not
+  `../../../domain/streak`.
 
 ## 2. File & naming conventions
 
