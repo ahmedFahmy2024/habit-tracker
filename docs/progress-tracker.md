@@ -9,7 +9,7 @@
 Per-phase handoff records: [handoffs/](./handoffs/) (written at the end of each phase — see
 [../AGENTS.md](../AGENTS.md) § Phase handoffs).
 
-Last updated: _2026-07-23 — Phase 2 complete: schema + initial migration (driver expo), DB client (change listeners) + MigrationGate loading/error screens, pure test-first domain (cadence/streak/stats, **35/35 tests green**), data hooks (habits/checkins). tsc/lint clean, expo-doctor 20/20; migration verified against a fresh in-memory sqlite. On-device useLiveQuery re-render pending a simulator run._
+Last updated: _2026-07-23 — Phase 3 complete: navigation shell. Native bottom tabs (Today/Habits/Settings) re-verified against installed expo-router 57.0.8; empty tab screens rebuilt on the Phase-1 `EmptyState`/`FAB`/`Button` primitives; `habit/[id]` push + `habit/new` modal wired and reachable; root provider order confirmed (GestureHandlerRoot → StatusBar → MigrationGate → Stack). tsc/lint clean, expo-doctor 20/20; full tab→modal→detail flow with native transitions + safe areas **verified live on an Android emulator (Pixel_10, Expo Go)**, no red-box. iOS unverified (no macOS host)._
 
 ---
 
@@ -20,7 +20,7 @@ Last updated: _2026-07-23 — Phase 2 complete: schema + initial migration (driv
 | 0 | Project scaffold & tooling | ✅ |
 | 1 | Design system foundation | ✅ |
 | 2 | Data layer (DB, schema, migrations, domain) | ✅ |
-| 3 | Navigation shell | ⬜ |
+| 3 | Navigation shell | ✅ |
 | 4 | Create & manage habits | ⬜ |
 | 5 | Today screen (core loop) | ⬜ |
 | 6 | Habit detail & history | ⬜ |
@@ -65,12 +65,14 @@ Last updated: _2026-07-23 — Phase 2 complete: schema + initial migration (driv
       kitchen-sink create+toggle **verified re-rendering live through `useLiveQuery`** on an
       Android emulator (0→1 habit; ○🔥0 ↔ ✓🔥1, no red-box).
 
-## Phase 3 — Navigation shell ⬜
-- [ ] (tabs)/_layout native tabs
-- [ ] placeholder tab screens (EmptyState)
-- [ ] habit/[id] push + habit/new modal
-- [ ] root _layout provider order
-- [ ] **Done-when:** navigate all screens with native transitions + safe areas
+## Phase 3 — Navigation shell ✅
+- [x] (tabs)/_layout native tabs — re-verified against installed expo-router 57.0.8 (unchanged)
+- [x] placeholder tab screens (EmptyState) — Today (add-first-habit), Habits (empty + FAB), Settings (shell)
+- [x] habit/[id] push + habit/new modal — thin primitive skeletons; `id` param round-trips; modal `router.back()`
+- [x] root _layout provider order — GestureHandlerRoot → StatusBar → MigrationGate → Stack (confirmed, unchanged)
+- [x] **Done-when:** tab across all 3, open modal + detail push and back out, with native
+      transitions + safe areas — **verified live on Android emulator (Pixel_10, Expo Go)**,
+      tsc/lint clean, expo-doctor 20/20, no red-box. *(iOS unverified — no macOS host.)*
 
 ## Phase 4 — Create & manage habits ⬜
 - [ ] CadencePicker / ColorPicker / IconPicker
@@ -142,12 +144,23 @@ _Record any deviation from the docs here, with a date and reason, so the docs st
 - **2026-07-23 (Phase 2)** — Domain `Cadence` is a **discriminated union decoupled from the DB
   row**; `cadenceOf` in `src/data/habits.ts` is the single flat↔domain bridge (keeps
   `src/domain` free of DB imports).
+- **2026-07-23 (Phase 3)** — `habit/new` kept as **`presentation: "modal"`** (not `formSheet`);
+  matches architecture §6. On Android `modal` = full-screen push-with-header (no card modal) —
+  expected native behavior.
+- **2026-07-23 (Phase 3)** — Empty-state primary actions (**Today** + **Habits**/FAB) open the
+  real add-habit modal now (`router.push('/habit/new')`) rather than a stubbed no-op.
+- **2026-07-23 (Phase 3)** — Detail-push demo is a **clearly-marked throwaway** `outlined`
+  button on Settings (delete in Phase 4/6 once Habits list rows link to `habit/[id]`).
+- **2026-07-23 (Phase 3)** — `kitchen-sink.tsx` **kept** (not deleted) — still the only
+  primitive/DB-reactivity eyeball surface until real feature screens exist (Phase 4/5).
 
 ## Open questions / parking lot
 - [ ] Finalize the accent source color → regenerate M3 palette hex in ui-tokens §1.2
       **and** the per-habit hexes in `src/theme/habitColors.ts`.
 - [x] ~~Choose the icon set~~ → `@expo/vector-icons`/MaterialCommunityIcons (Phase 1).
-- [ ] Confirm `NativeTabs` import path is still `unstable-native-tabs` at build time.
+- [x] ~~Confirm `NativeTabs` import path is still `unstable-native-tabs` at build time.~~ →
+      **confirmed 2026-07-23 (Phase 3):** still `expo-router/unstable-native-tabs` in the
+      installed **expo-router 57.0.8**; tabs render live on the Android emulator.
 - [ ] On-device visual sign-off of primitives (light/dark + reduced motion) via
       `/kitchen-sink` — deferred from Phase 1 (headless env, no simulator).
 - [x] ~~On-device sign-off of the DB layer via `/kitchen-sink`~~ → **verified 2026-07-23** on

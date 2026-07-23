@@ -26,6 +26,31 @@ export const strings = {
     genericTitle: "Nothing here yet",
     genericBody: "When there's something to show, it'll appear here.",
   },
+  /** Tab screen copy (build-plan Phase 3 — navigation shell). */
+  today: {
+    emptyTitle: "Add your first habit",
+    emptyBody: "Habits you're doing today will show up here. Start by adding one.",
+    emptyAction: "Add your first habit",
+  },
+  habits: {
+    emptyTitle: "No habits yet",
+    emptyBody: "Create a habit to start building your streaks.",
+    newAction: "New habit",
+    fabLabel: "Add habit",
+  },
+  settings: {
+    title: "Settings",
+    body: "Theme, week-start, and data options will live here.",
+  },
+  /** Habit detail + add/edit screens (skeletons this phase). */
+  habitDetail: {
+    title: "Habit detail",
+    body: "History, streaks, and the heatmap will live here.",
+  },
+  habitNew: {
+    title: "New habit",
+    body: "Name, color, icon, and cadence form goes here.",
+  },
   /** Migration gate — the loading/error screens shown at boot (docs/architecture.md §8). */
   migration: {
     loadingTitle: "Setting things up",

@@ -85,6 +85,104 @@ clone from another project's cache.
 
 ---
 
+## 📱 On-device verification (Android emulator + Expo Go)
+
+Every phase with UI must be verified live on the **Pixel_10** Android emulator through **Expo
+Go** (`host.exp.exponent`) before the handoff — same flow since Phase 2. This is a **Windows +
+Git Bash** host; the steps below encode the exact failures hit in earlier phases so they don't
+recur. **Do them in order; don't improvise a shortcut that skipped a step last time.**
+
+`adb` and `emulator` are on PATH (under `~/AppData/Local/Android/Sdk/`).
+
+### 1. Boot the emulator (if not already running)
+
+```bash
+adb devices -l                                   # already a device? skip the boot
+emulator -list-avds                              # expect: Pixel_10
+emulator -avd Pixel_10 -no-snapshot-save > /tmp/emulator.log 2>&1 &   # run in background
+adb wait-for-device
+# then poll until fully booted:
+while [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" != "1" ]; do sleep 3; done
+```
+
+### 2. Start Metro — **kill any stale server on 8081 first** (this bit us before)
+
+A leftover Metro from a prior session holds port 8081. In non-interactive/CI mode `expo start`
+then **prompts "Use port 8082?" and silently skips the dev server** — the app never connects.
+Always free the port first, and start Metro in **CI mode with a fixed port** so it never
+prompts:
+
+```bash
+# Is 8081 taken? Find + kill the owning PID (it's a stale node/Metro — safe to restart):
+powershell.exe -NoProfile -Command "Get-NetTCPConnection -LocalPort 8081 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess" | tr -d '\r'
+# powershell.exe -NoProfile -Command "Stop-Process -Id <PID> -Force"
+
+adb reverse tcp:8081 tcp:8081                     # route device:8081 → host Metro
+cd <repo> && CI=1 EXPO_NO_TELEMETRY=1 bunx expo start --clear --port 8081 > /tmp/expo-start.log 2>&1 &
+# wait, then confirm "Waiting on http://localhost:8081" in /tmp/expo-start.log
+```
+
+Use `--clear` only when metro/babel config changed (or to rule out a stale bundle); it forces
+a full rebuild (~12s, "Bundler cache is empty").
+
+### 3. Launch the project in Expo Go — **the `exp://` intent alone bounces to the launcher**
+
+Firing only the deep link often drops back to the home screen, or Expo Go wedges on its blue
+spinner. The reliable sequence: **foreground Expo Go's activity, then deep-link, and if it's
+still stuck, force-stop and cold-launch.**
+
+```bash
+adb shell monkey -p host.exp.exponent -c android.intent.category.LAUNCHER 1   # bring Expo Go forward
+adb shell am start -a android.intent.action.VIEW -d "exp://127.0.0.1:8081" host.exp.exponent
+
+# Verify what's actually foreground (should be .experience.ExperienceActivity, NOT the launcher):
+adb shell dumpsys activity activities | grep -i topResumedActivity | tr -d '\r' | head -1
+
+# If wedged on the Expo Go spinner (screenshot stays ~25KB / no ReactNativeJS logs), cold-restart:
+adb shell am force-stop host.exp.exponent
+adb shell monkey -p host.exp.exponent -c android.intent.category.LAUNCHER 1 ; sleep 5
+adb shell am start -a android.intent.action.VIEW -d "exp://127.0.0.1:8081" host.exp.exponent
+```
+
+Wait for the first bundle: watch `/tmp/expo-start.log` for `Android Bundled … (NNNN modules)`.
+A real rendered screen is a **large** screencap (~60–100KB); a ~25KB one is still the spinner —
+wait longer or cold-restart.
+
+### 4. Screenshots — **write them INTO the repo, not `/tmp`**
+
+The Read tool can't resolve Git Bash `/tmp` (it maps to a Windows temp path). Capture into a
+temp dir **inside the repo**, Read them, then delete the dir before finishing:
+
+```bash
+mkdir -p .device-shots
+adb exec-out screencap -p > .device-shots/01-today.png     # then Read the absolute repo path
+# drive the UI with taps (screencap is 1080×2424; the Read image is downscaled —
+#   multiply the displayed coords by the ratio the tool reports to get device pixels):
+adb shell input tap <x> <y>
+# ...capture each screen in the done-when flow...
+rm -rf .device-shots                                        # clean up — never commit shots
+```
+
+### 5. Reading logs / triaging
+
+```bash
+adb logcat -d -t 500 | grep -iE "ReactNativeJS|Exception|error|fatal" | grep -viE "adbd|Nl80211|nativeloader"
+```
+
+- **Benign, ignore it:** `UIManagerHelper … ReactNoCrashSoftException: Cannot get UIManager
+  because the context doesn't contain an active React instance` — fires when a *previous* Expo
+  Go instance is torn down on reload/force-stop. It is **not** a red-box.
+- A real JS error shows as a `ReactNativeJS` error line and/or an on-screen red-box — that
+  fails the phase.
+
+### 6. Leave it running
+
+Leave Metro and the emulator up at the end (the user may want to poke at it) unless asked to
+stop them. Note in the handoff's **Verified by** line exactly which screens/flow you exercised
+and that iOS is unverified (no macOS host).
+
+---
+
 ## 🤝 Phase handoffs — document every finished phase
 
 The build proceeds in phases ([docs/build-plan.md](docs/build-plan.md)). **When a phase's

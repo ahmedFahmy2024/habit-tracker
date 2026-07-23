@@ -1,40 +1,30 @@
-import { useColorScheme } from "nativewind";
-import { Pressable, Text, View } from "react-native";
+import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { strings } from "@/lib";
+import { EmptyState } from "@/ui/primitives";
+
 /**
- * Today — the app's front door (docs/project-overview.md §6).
- * Skeleton only: proves NativeWind className theming + dark-mode flip work end-to-end.
- * Real habit list arrives in build-plan Phase 5.
+ * Today — the app's front door (docs/project-overview.md §6, docs/architecture.md §8).
+ *
+ * Navigation shell (build-plan Phase 3): no habits exist yet, so the whole screen is the
+ * expressive empty state whose primary action opens the add-habit modal. The real
+ * `useTodayHabits` list + CheckControls arrive in Phase 5.
  */
 export default function TodayScreen() {
-  const { colorScheme, toggleColorScheme } = useColorScheme();
+  const router = useRouter();
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
-      <View className="flex-1 px-4 pt-6">
-        <Text className="text-3xl font-bold text-on-background">Today</Text>
-        <Text className="mt-1 text-base text-on-surface-variant">
-          Your habits for today will live here.
-        </Text>
-
-        <View className="mt-6 rounded-lg bg-surface-container p-4">
-          <Text className="text-base font-medium text-on-surface">
-            Theme check
-          </Text>
-          <Text className="mt-1 text-sm text-on-surface-variant">
-            Current scheme: {colorScheme ?? "system"}
-          </Text>
-          <Pressable
-            onPress={toggleColorScheme}
-            className="mt-3 self-start rounded-full bg-primary px-4 py-2 active:opacity-80"
-          >
-            <Text className="text-sm font-medium text-on-primary">
-              Toggle light / dark
-            </Text>
-          </Pressable>
-        </View>
-      </View>
+      <EmptyState
+        glyph="clipboard-check-outline"
+        title={strings.today.emptyTitle}
+        body={strings.today.emptyBody}
+        action={{
+          label: strings.today.emptyAction,
+          onPress: () => router.push("/habit/new"),
+        }}
+      />
     </SafeAreaView>
   );
 }
