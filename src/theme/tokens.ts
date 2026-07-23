@@ -61,6 +61,17 @@ export const stagger = {
   max: 240,
 } as const;
 
+// docs/ui-tokens.md §9 — heatmap calendar geometry (habit detail). GitHub-style cells are
+// deliberately smaller than the 4pt content grid, so the cell/gap/radius live as named tokens
+// here rather than being inlined (docs/ui-rules.md §1). The cell's TAP target is widened to
+// 48dp via hitSlop in the component, not by growing the visual.
+export const heatmap = {
+  cell: 14, // visual cell edge (dp)
+  gap: 3, // gap between cells (dp)
+  radius: 3, // cell corner radius (dp)
+  weeks: 26, // visible window: last N ISO-ish weeks (columns)
+} as const;
+
 // docs/ui-tokens.md §8 — z-index / layering
 export const z = {
   base: 0,

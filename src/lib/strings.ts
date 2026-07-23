@@ -73,10 +73,60 @@ export const strings = {
     title: "Settings",
     body: "Theme, week-start, and data options will live here.",
   },
-  /** Habit detail + add/edit screens (skeletons this phase). */
+  /** Habit detail — streak hero, stats, heatmap, and manage actions (build-plan Phase 6). */
   habitDetail: {
-    title: "Habit detail",
-    body: "History, streaks, and the heatmap will live here.",
+    /** Shown while the live query loads / when the habit no longer exists (docs/architecture.md §8). */
+    notFound: "This habit no longer exists.",
+
+    // --- StreakBadge (hero) ---
+    /** Unit caption under the hero number. */
+    streakUnitDays: "day streak",
+    streakUnitWeeks: "week streak",
+    /** Quiet zero state — no scary "🔥 0". */
+    noStreak: "No streak yet",
+    /** "Best N" line beneath the hero (unit-aware). */
+    bestDays: (n: number) => `Best: ${n} ${n === 1 ? "day" : "days"}`,
+    bestWeeks: (n: number) => `Best: ${n} ${n === 1 ? "week" : "weeks"}`,
+    a11yStreakDays: (current: number, best: number) =>
+      `${current} day current streak, best ${best} days`,
+    a11yStreakWeeks: (current: number, best: number) =>
+      `${current} week current streak, best ${best} weeks`,
+
+    // --- Stat row (Best · Completion · Total) ---
+    statBest: "Best",
+    statCompletion: "Completion",
+    statTotal: "Check-ins",
+    /** Completion percentage, e.g. "82%". */
+    completionValue: (rate: number) => `${Math.round(rate * 100)}%`,
+    /** Unit-suffixed best value for the stat tile, e.g. "12d" / "3w". */
+    bestValue: (n: number, unit: "days" | "weeks") =>
+      `${n}${unit === "weeks" ? "w" : "d"}`,
+
+    // --- Heatmap ---
+    heatmapTitle: "History",
+    heatmapHint: "Tap a past day to add or remove a check-in.",
+    /** A11y label for one cell, e.g. "Jul 12: done". */
+    a11yHeatmapCell: (dayLabel: string, state: string) => `${dayLabel}: ${state}`,
+    heatmapStateDone: "done",
+    heatmapStateMissed: "missed",
+    heatmapStateUnscheduled: "not scheduled",
+    heatmapStateFuture: "upcoming",
+    /** Sunday-first weekday initials for the heatmap row legend. */
+    heatmapWeekdays: ["S", "M", "T", "W", "T", "F", "S"] as const,
+
+    // --- Manage actions ---
+    edit: "Edit",
+    archive: "Archive",
+    delete: "Delete",
+    archiveConfirmTitle: "Archive habit?",
+    archiveConfirmBody:
+      "It's removed from your lists but its history is kept. You can't undo this in v1.",
+    deleteConfirmTitle: "Delete habit?",
+    deleteConfirmBody:
+      "This permanently deletes the habit and all its check-in history. This can't be undone.",
+    a11yEdit: "Edit habit",
+    a11yArchive: "Archive habit",
+    a11yDelete: "Delete habit",
   },
   /** Add-habit modal (build-plan Phase 4). */
   habitNew: {

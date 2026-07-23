@@ -23,3 +23,8 @@ export function todayString(): DayString {
 export function formatDayLong(day: DayString): string {
   return format(parseISO(day), "EEEE, MMM d");
 }
+
+/** A compact day label, e.g. "Jul 23" (used for heatmap-cell a11y). Display-only. */
+export function formatDayShort(day: DayString): string {
+  return format(parseISO(day), "MMM d");
+}

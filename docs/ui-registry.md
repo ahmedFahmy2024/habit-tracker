@@ -137,15 +137,36 @@ Large toggle that marks a habit done.
 - **Archive:** the row is wrapped in `ReanimatedSwipeable`; swiping left reveals an
   `error`-tinted Archive action → confirm (Alert) → `onArchive`. (docs/library-docs.md §10)
 
-### `StreakBadge` 🟡
-- **Props:** `current: number`, `best?: number`, `size?`.
-- Hero variant (habit detail) uses `display.medium` emphasized for the number.
+### `StreakBadge` 🟢
+- **Props:** `current: number`, `best: number`, `unit: 'days' | 'weeks'`, `colorKey: HabitColorKey`.
+- **Presentation only** — takes already-computed numbers (all domain math lives in the
+  `useHabitStats(id, today)` data hook, memoized per §9; the badge never computes).
+- **Hero layout:** the **current** streak number in `display.medium` **emphasized** (ui-tokens
+  §2, ui-rules §5), tinted with the habit **accent** (`useHabitColors(colorKey).accent`, raw
+  value via `style` — a per-habit tint can't be a global M3 role, ui-tokens §1.3), with a
+  `label.large` unit caption ("day streak" / "week streak"). A `label.medium` "Best: N" line
+  sits beneath in `onSurfaceVariant`. A leading 🔥 marks a live (>0) streak; at 0 the hero reads
+  a quiet "No streak yet" (`headline.medium`, no scary "🔥 0", matching the Today card rule).
+  No new tokens.
+- **A11y:** the number+unit is one label ("N day streak, best M"); decorative emoji not read.
 
-### `Heatmap` 🟡 — calendar history
-- **Props:** `checkins`, `cadence`, `from`, `to`, `onDayPress?`.
-- GitHub-style month/day grid. Cell color intensity by done/scheduled; missed scheduled
-  days use `errorContainer` subtly. Tapping a past day toggles (per
-  [architecture.md](./architecture.md) §7.4). Never allows future days.
+### `Heatmap` 🟢 — calendar history
+- **Props:** `buckets: HeatmapBucket[]` (from `heatmapBuckets`, chronological), `colorKey:
+  HabitColorKey`, `today: DayString`, `onToggleDay: (day) => void`.
+- **Render (decided Phase 6):** a **pure View/flex grid** (not SVG) — GitHub-style columns of
+  weeks (Sunday-top), each cell an independent `Pressable` so a tap maps cleanly to its `day`
+  string and gets a 48dp `hitSlop` target. Geometry + per-state cell fills come from
+  `heatmap.*` tokens + roles ([ui-tokens.md](./ui-tokens.md) §9): `done` = habit `accent`,
+  `missed` (past scheduled unchecked) = subtle `errorContainer`, `unscheduled` =
+  `surfaceContainerHighest`, future/out-of-range = `surfaceContainerLow`.
+- **Window:** the last `heatmap.weeks` (26) weeks, **horizontally scrollable** (newest at the
+  right, scrolled into view). Backfill is limited to this window.
+- **Interaction:** tapping a **past or today** cell calls `onToggleDay(day)` (backfill via
+  `toggleCheckin`, [architecture.md](./architecture.md) §7.4) + `haptic.check`/`uncheck`;
+  **future days are non-interactive** (disabled, recessed fill). The screen re-derives buckets
+  reactively via `useHabitStats`.
+- **A11y:** each interactive cell is a `checkbox` with `accessibilityState={{ checked }}` and a
+  day+state label; future cells are not focusable. A weekday-row + month label legend orients it.
 
 ### `CadencePicker` 🟢 — used in add/edit habit
 - **Props:** `value: Cadence`, `onChange: (c: Cadence) => void`.

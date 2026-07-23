@@ -15,6 +15,14 @@ export const expoDb = openDatabaseSync("happit.db", {
   enableChangeListener: true,
 });
 
+/**
+ * SQLite defaults `foreign_keys` to OFF per connection (it's a compile-time default expo-sqlite
+ * doesn't override). Turn it ON so the `checkins.habitId` cascade (docs/architecture.md §4)
+ * actually fires on `deleteHabit` — otherwise a hard delete would orphan its check-ins. Run
+ * once, synchronously, on the single connection before any query.
+ */
+expoDb.execSync("PRAGMA foreign_keys = ON;");
+
 export const db = drizzle(expoDb, { schema });
 
 export type DB = typeof db;

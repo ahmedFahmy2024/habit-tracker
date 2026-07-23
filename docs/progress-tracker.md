@@ -9,7 +9,7 @@
 Per-phase handoff records: [handoffs/](./handoffs/) (written at the end of each phase — see
 [../AGENTS.md](../AGENTS.md) § Phase handoffs).
 
-Last updated: _2026-07-23 — Phase 5 complete: Today screen (the core loop). New `useTodayHabits` (`src/data/today.ts`) composes active+scheduled habits × today's check-ins with a memoized per-habit streak (off one `useAllCheckins` subscription); the signature `CheckControl` (radius→circle morph + fill + **SVG stroke-draw check** + `scale.pop`, haptics, a11y checkbox), `ProgressRing` primitive (SVG `strokeDashoffset` + 100% pop/celebrate), `HabitCard` (two ≥48dp targets: body→detail, control→toggle), and `CompletionSummary` ("All done!" at 100%). Added **`react-native-svg@15.15.4`** (user-chosen for the stroke-draws; API verified from source, library-docs §11) + `todayString()`/`formatDayLong()` boundary helpers. Today tab wired thin with a `FadeInDown` entrance stagger + reduced-motion path. tsc/lint clean, expo-doctor 20/20; **core loop verified live on Android emulator (Pixel_10, Expo Go)** — toggle morph + reactive ring, 3/3 "All done!" celebration, correct day-vs-week streak units, card→detail, and a Weekdays habit correctly excluded on a non-scheduled day. iOS unverified (no macOS host)._
+Last updated: _2026-07-23 — Phase 6 complete: Habit detail & history (trustworthy stats). New `useHabitStats(id, today)` (`src/data/habitStats.ts`) derives current/best streak, completion %, heatmap buckets, and total count from the pure domain in one §9-memoized `useMemo`; the `StreakBadge` hero (`display.medium` emphasized, accent-tinted, quiet "No streak yet" at 0), the `Heatmap` (**pure View/flex grid**, last 26 weeks, horizontally scrollable; per-cell `Pressable` backfill of past/today via `toggleCheckin`, future cells inert; done=accent / missed=`errorContainer` / unscheduled=`surfaceContainerHighest`), a 3-stat row (Best · Completion · Check-ins), and Edit/Archive/**Delete** actions. Added the **`deleteHabit`** hard-delete writer + **`PRAGMA foreign_keys = ON`** (so the checkins FK cascade actually fires) + `formatDayShort` + `heatmap.*` geometry tokens. `habit/[id].tsx` rewritten thin (loading gap + not-found). tsc/lint clean, expo-doctor 20/20; **verified live on Android emulator (Pixel_10, Expo Go)** — created a daily habit, opened detail, **backfilled a past day** (Best/Completion/Check-ins + heatmap cell update reactively), **checked today** → "🔥 1 day streak", un-check reversed it, Edit pre-populated, **Delete → destructive confirm → hard delete + cascade** (Today empty). The exact stat pipeline also hand-verified against a throwaway domain script (4 cadence cases, all exact). iOS unverified (no macOS host). NOTE: the Pixel_10 AVD needed `-memory 3072` — at its default 2 GB the low-memory-killer bounced Expo Go._
 
 ---
 
@@ -23,7 +23,7 @@ Last updated: _2026-07-23 — Phase 5 complete: Today screen (the core loop). Ne
 | 3 | Navigation shell | ✅ |
 | 4 | Create & manage habits | ✅ |
 | 5 | Today screen (core loop) | ✅ |
-| 6 | Habit detail & history | ⬜ |
+| 6 | Habit detail & history | ✅ |
 | 7 | Settings & data safety | ⬜ |
 | 8 | Polish, a11y, performance | ⬜ |
 
@@ -100,12 +100,16 @@ Last updated: _2026-07-23 — Phase 5 complete: Today screen (the core loop). Ne
       exclusion — **verified live on Android emulator (Pixel_10, Expo Go)**; tsc/lint clean,
       expo-doctor 20/20, no red-box. *(iOS unverified — no macOS host.)*
 
-## Phase 6 — Habit detail & history ⬜
-- [ ] StreakBadge (current+best)
-- [ ] Heatmap + past-day backfill (no future)
-- [ ] completion rate/counts (memoized)
-- [ ] edit/archive/delete
-- [ ] **Done-when:** stats match hand-computed; backfill updates correctly; smooth on big history
+## Phase 6 — Habit detail & history ✅
+- [x] `StreakBadge` (current + best; `display.medium` emphasized, accent-tinted, quiet "No streak yet" at 0)
+- [x] `Heatmap` (pure View/flex grid, last 26wk, horizontal scroll; past/today `Pressable` backfill → `toggleCheckin`; future cells inert; done=accent / missed=`errorContainer` / unscheduled=`surfaceContainerHighest`)
+- [x] completion rate + counts, **memoized** in `useHabitStats(id, today)` (§9 key `(habitAt, checkinsAt, today, id)`)
+- [x] edit (→`habit/edit/[id]`) / archive (`archiveHabit`, confirm) / **delete** (new `deleteHabit` hard-delete + destructive confirm + FK cascade; `PRAGMA foreign_keys = ON`)
+- [x] `habit/[id].tsx` rewritten thin (loading gap + `EmptyState` not-found; dynamic header title)
+- [x] **Done-when:** stats match hand-computed (throwaway domain script + on-device) — **verified
+      live on Android emulator (Pixel_10, Expo Go)**: backfill updates streak/heatmap/stats
+      reactively; check-today→"🔥 1"; future never toggled; edit/archive/delete work; tsc/lint
+      clean, expo-doctor 20/20, no red-box. *(iOS unverified — no macOS host.)*
 
 ## Phase 7 — Settings & data safety ⬜
 - [ ] theme mode / accent / week-start (persisted)
@@ -190,6 +194,25 @@ _Record any deviation from the docs here, with a date and reason, so the docs st
 - **2026-07-23 (Phase 5)** — `CheckControl` fires the haptic in `onPressIn` (picks `check` vs
   `uncheck` from the resulting state) with `scaleOnPress={false}` (the morph is the feedback);
   the fill uses reanimated's documented `'transparent'` interpolation (alpha-0 of the accent).
+- **2026-07-23 (Phase 6)** — **Hard delete added** (`deleteHabit`, new writer) on the detail
+  screen with a destructive confirm `Alert`, alongside Edit + Archive. Relies on the
+  `checkins.habitId` FK cascade — which required **`PRAGMA foreign_keys = ON`** in `client.ts`
+  (SQLite defaults it OFF per connection; expo-sqlite doesn't override). Archive stays the
+  soft-hide.
+- **2026-07-23 (Phase 6)** — **Heatmap = a pure View/flex grid** (not `react-native-svg`), last
+  **26 weeks**, horizontally scrollable. A `Pressable`-per-cell makes tap→`day` mapping + the 48dp
+  hit area trivial (SVG hit-testing would be fiddlier); future cells are inert `View`s. Backfill is
+  limited to the visible window. Cell fills are roles/accent only (ui-tokens §9).
+- **2026-07-23 (Phase 6)** — **Stats derived in a `useHabitStats(id, today)` data hook** (not in
+  the route), one §9-memoized `useMemo` keyed on `(habitAt, checkinsAt, today, id)` — the
+  live-query `updatedAt`s are the `checkinsVersion`. Keeps `habit/[id].tsx` thin (architecture §3)
+  and mirrors the `useTodayHabits` pattern.
+- **2026-07-23 (Phase 6)** — **Detail header = StreakBadge hero + a 3-stat row** (Best ·
+  Completion % · total Check-ins). Current streak is the `display.medium`-emphasized,
+  accent-tinted hero; completion % is over the visible 26-week window so it agrees with the heatmap.
+- **2026-07-23 (Phase 6)** — On-device verification needed the Pixel_10 AVD booted with
+  **`-memory 3072`**; at its default **2 GB** the low-memory-killer repeatedly bounced Expo Go to
+  the launcher (`adb logcat … "mem-pressure-event"`). Not a code issue.
 
 ## Open questions / parking lot
 - [ ] Finalize the accent source color → regenerate M3 palette hex in ui-tokens §1.2

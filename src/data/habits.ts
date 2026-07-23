@@ -180,4 +180,20 @@ export async function archiveHabit(id: string): Promise<void> {
   }
 }
 
+/**
+ * Hard-delete a habit and all its history. The `checkins.habitId` FK is `onDelete: 'cascade'`
+ * (docs/architecture.md §4), so removing the habit row also removes its check-ins — no separate
+ * delete needed. Permanent and unrecoverable; the caller must confirm (docs/architecture.md
+ * §7.4 backfill is per-day; this removes the whole habit). Contrast with `archiveHabit`, which
+ * only hides it.
+ */
+export async function deleteHabit(id: string): Promise<void> {
+  try {
+    await db.delete(habits).where(eq(habits.id, id));
+  } catch (error) {
+    logger.error("deleteHabit failed", { id, error });
+    throw error;
+  }
+}
+
 export type { Habit };

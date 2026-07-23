@@ -246,3 +246,26 @@ Wrapper in `src/lib/haptics.ts` over `expo-haptics`. Tokens = semantic events.
 | `z.overlay` | 30 | scrims |
 | `z.modal` | 40 | sheets/dialogs |
 | `z.toast` | 50 | snackbars |
+
+## 9. Heatmap calendar geometry
+
+The habit-detail `Heatmap` (GitHub-style calendar grid) uses cells deliberately smaller than
+the 4pt content grid, so its geometry is named tokens in `src/theme/tokens.ts` (`heatmap.*`)
+rather than inlined values. The **visual** cell stays small; its **tap** hit area is widened to
+the 48dp minimum via `hitSlop` in the component (ui-rules §1 rule 4), not by growing the cell.
+
+| Token | dp / value | Use |
+| --- | --- | --- |
+| `heatmap.cell` | 14 | one day cell's visual edge |
+| `heatmap.gap` | 3 | gap between cells (rows & columns) |
+| `heatmap.radius` | 3 | cell corner radius |
+| `heatmap.weeks` | 26 | visible window (columns) = last 26 weeks; backfill is limited to this window |
+
+**Cell color = state, from tokens/roles (never a raw hex):**
+
+| Cell state | Fill | Source |
+| --- | --- | --- |
+| `done` (checked) | the habit **accent** | `useHabitColors(key).accent` |
+| `missed` (scheduled, unchecked, past) | subtle `errorContainer` | role — the muted "missed" tint (ui-rules §2), never alarming |
+| `unscheduled` (not scheduled, unchecked) | `surfaceContainerHighest` | role — a quiet empty cell |
+| out-of-range / future | `surfaceContainerLow` | role — visually recessed, non-interactive |

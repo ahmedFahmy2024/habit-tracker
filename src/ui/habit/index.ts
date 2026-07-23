@@ -12,6 +12,8 @@ export {
   CompletionSummary,
   type CompletionSummaryProps,
 } from "./CompletionSummary";
+export { StreakBadge, type StreakBadgeProps } from "./StreakBadge";
+export { Heatmap, type HeatmapProps } from "./Heatmap";
 export { CadencePicker, type CadencePickerProps } from "./CadencePicker";
 export { ColorPicker, type ColorPickerProps } from "./ColorPicker";
 export {
