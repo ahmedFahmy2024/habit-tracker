@@ -56,6 +56,20 @@ export const checkins = sqliteTable(
   ],
 );
 
+/**
+ * A tiny key→value store for app preferences (theme mode, accent key, week-start) — the one
+ * documented exception to "the database is the state" (docs/architecture.md §2). Kept in the
+ * same `happit.db` so the zustand preferences store hydrates **synchronously** at boot (via
+ * `expoDb.getFirstSync`) with no theme flash. Values are JSON-encoded strings. This table is
+ * intentionally NOT read through drizzle/`useLiveQuery` — it's read/written with raw sync SQL
+ * in `src/store/preferences.ts`; it lives here only so the migration that creates it is part of
+ * the versioned schema. It is deliberately excluded from data export/import (prefs aren't data).
+ */
+export const keyValue = sqliteTable("key_value", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(), // JSON-encoded
+});
+
 export type Habit = typeof habits.$inferSelect;
 export type NewHabit = typeof habits.$inferInsert;
 export type Checkin = typeof checkins.$inferSelect;

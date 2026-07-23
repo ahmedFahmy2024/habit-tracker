@@ -16,12 +16,18 @@
  * `toggleCheckin`, docs/architecture.md §7.4) and fires the check/uncheck haptic; FUTURE days are
  * non-interactive (a plain recessed cell). The window is the last `heatmap.weeks` weeks; the
  * screen re-derives `buckets` reactively (`useHabitStats`) so a toggle updates the grid live.
+ *
+ * Week-start is DISPLAY-ONLY (docs/architecture.md §7.2/§7.3): the `weekStart` preference rotates
+ * the weekday-row legend AND each day's row position in lockstep (`(weekday - weekStart + 7) % 7`),
+ * so a Monday-first grid puts Monday at the top. `weekdayOf`, the `bucket.day` strings, and every
+ * streak/schedule computation are untouched — only the on-screen row index changes.
  */
 import { useEffect, useRef } from "react";
 import { ScrollView, View } from "react-native";
 
 import { weekdayOf, type DayString, type HeatmapBucket, type HeatmapState } from "@/domain";
-import { formatDayShort, haptics, strings } from "@/lib";
+import { formatDayShort, haptics, reorderBySunday, strings } from "@/lib";
+import { usePreferences } from "@/store";
 import {
   heatmap as g,
   space,
@@ -52,6 +58,7 @@ interface Cell {
 export function Heatmap({ buckets, colorKey, today, onToggleDay }: HeatmapProps) {
   const { accent } = useHabitColors(colorKey);
   const { colors } = useTheme();
+  const weekStart = usePreferences((s) => s.weekStart);
   const scrollRef = useRef<ScrollView>(null);
 
   // Newest column is on the right; scroll it into view on mount so "now" is what you see first.
@@ -85,15 +92,17 @@ export function Heatmap({ buckets, colorKey, today, onToggleDay }: HeatmapProps)
     }
   };
 
-  // Bucket the days into week columns, Sunday-first. Pad the leading week so the first day sits
-  // in its correct weekday row; trailing padding fills the final partial week to 7 rows.
-  const columns = toWeekColumns(buckets, today);
+  // Bucket the days into week columns, ordered by the display week-start. Pad the leading week so
+  // the first day sits in its correct display row; trailing padding fills the final partial week.
+  const columns = toWeekColumns(buckets, today, weekStart);
+  // The legend initials rotate in lockstep with the row order (display-only).
+  const legend = reorderBySunday(strings.habitDetail.heatmapWeekdays, weekStart);
 
   return (
     <View className="flex-row" style={{ gap: space[2] }}>
-      {/* Weekday-initial legend down the left (Sun..Sat), aligned to the grid rows. */}
+      {/* Weekday-initial legend down the left, aligned to the grid rows (week-start ordered). */}
       <View style={{ gap: g.gap, paddingTop: 0 }}>
-        {strings.habitDetail.heatmapWeekdays.map((d, i) => (
+        {legend.map((d, i) => (
           <View
             key={i}
             style={{ height: g.cell, width: g.cell, justifyContent: "center", alignItems: "center" }}
@@ -175,20 +184,28 @@ export function Heatmap({ buckets, colorKey, today, onToggleDay }: HeatmapProps)
 }
 
 /**
- * Split chronological buckets into Sunday-first week columns. `null` slots pad the leading week
- * (so day 1 lands on its weekday row) and the trailing partial week up to 7 rows. Pure layout.
+ * Split chronological buckets into week columns ordered by `weekStart`. `null` slots pad the
+ * leading week (so day 1 lands on its correct display row) and the trailing partial week up to 7
+ * rows. Pure layout.
+ *
+ * `weekStart` shifts only the DISPLAY row: a day's row = `(weekdayOf(day) - weekStart + 7) % 7`.
+ * The domain weekday number (`weekdayOf`) is unchanged — this rotates where the cell is drawn,
+ * nothing else (docs/architecture.md §7.2/§7.3).
  */
 function toWeekColumns(
   buckets: HeatmapBucket[],
   today: DayString,
+  weekStart: 0 | 1,
 ): (Cell | null)[][] {
   if (buckets.length === 0) return [];
+  const displayRow = (day: DayString) => (weekdayOf(day) - weekStart + ROWS) % ROWS;
+
   const columns: (Cell | null)[][] = [];
   let current: (Cell | null)[] = [];
 
-  // Lead padding: empty slots for weekdays before the first bucket's weekday.
-  const firstWeekday = weekdayOf(buckets[0].day);
-  for (let i = 0; i < firstWeekday; i++) current.push(null);
+  // Lead padding: empty slots for the display-rows before the first bucket's display-row.
+  const firstRow = displayRow(buckets[0].day);
+  for (let i = 0; i < firstRow; i++) current.push(null);
 
   for (const bucket of buckets) {
     current.push({ bucket, future: bucket.day > today });

@@ -7,8 +7,9 @@
  * It emits the normalized domain `Cadence` union; the data layer's `cadenceColumns` flattens
  * it to the DB columns. Selecting a segment/chip fires `haptic.select` (via `Chip`/`Pressable`).
  *
- * Week-start is a DISPLAY concern only (docs/architecture.md §7.2). No pref store exists yet
- * (Phase 7), so display defaults to Sunday-first; the Weekday NUMBERS emitted are unaffected.
+ * Week-start is a DISPLAY concern only (docs/architecture.md §7.2). The `weekStart` preference
+ * reorders the weekday-chip DISPLAY (via `weekdayDisplayOrder`); the Weekday NUMBERS emitted are
+ * unaffected — a Monday-first display still toggles Weekday 0 for Sunday.
  */
 import { useEffect } from "react";
 import { View } from "react-native";
@@ -18,7 +19,8 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 
-import { strings, WEEKDAY_DISPLAY_ORDER } from "@/lib";
+import { strings, weekdayDisplayOrder } from "@/lib";
+import { usePreferences } from "@/store";
 import type { Cadence, Weekday } from "@/domain";
 import { radius, space, springs, useMotion } from "@/theme";
 import { Chip, Icon, Pressable, Text } from "@/ui/primitives";
@@ -171,9 +173,13 @@ function WeekdayChips({
   onToggle: (day: Weekday) => void;
 }) {
   const set = new Set(selected);
+  // Week-start reorders the DISPLAY only; `day` is still the fixed Weekday number (0=Sun..6=Sat),
+  // so `weekdayShort[day]` and the toggled value are unchanged — just their on-screen position.
+  const weekStart = usePreferences((s) => s.weekStart);
+  const order = weekdayDisplayOrder(weekStart);
   return (
     <View className="flex-row flex-wrap" style={{ gap: space[2] }}>
-      {WEEKDAY_DISPLAY_ORDER.map((day) => (
+      {order.map((day) => (
         <Chip
           key={day}
           label={strings.cadence.weekdayShort[day]}

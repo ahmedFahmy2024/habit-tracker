@@ -14,3 +14,7 @@ export { TextField, type TextFieldProps } from "./TextField";
 export { EmptyState, type EmptyStateProps } from "./EmptyState";
 export { Icon, type IconProps, type IconName } from "./Icon";
 export { ProgressRing, type ProgressRingProps } from "./ProgressRing";
+export {
+  SegmentedControl,
+  type SegmentedControlProps,
+} from "./SegmentedControl";

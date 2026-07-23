@@ -88,6 +88,19 @@ Circular completion indicator (Today header).
 - **Props:** `glyph` (IconName), `title`, `body?`, `action?: { label, onPress }`.
 - Uses `headline.large` title. Never render a bare "no data" anywhere else — use this.
 
+### `SegmentedControl<T>` 🟢
+Generic single-select segmented control (the pattern CadencePicker uses inline, extracted for
+reuse — Settings' theme-mode + week-start selectors).
+- **Props:** `segments: { key: T; label: string }[]`, `selected: T`, `onSelect: (key: T) => void`,
+  `accessibilityLabel?`.
+- **Render:** a `surfaceContainer`-tinted pill track; the selected segment is a
+  `secondaryContainer` filled pill that **springs** across on change (`springs.default`; instant
+  under reduced motion). Each segment is a `Pressable` (`haptic.select`, ≥48dp via `minHeight`),
+  `label.large`, `onSecondaryContainer` when selected else `onSurfaceVariant`. Tokens/roles only.
+- **A11y:** each segment `role="button"` with `accessibilityState={{ selected }}`.
+- **Note:** CadencePicker keeps its own copy (its highlight math differs slightly); this is the
+  shared version for neutral settings selectors. No new tokens.
+
 ### `Sheet` / `Modal` 🟡
 Wrapper over Expo Router modal presentation for add/edit habit.
 - **Props:** children, `title`, `onClose`. Native present; content fades in (`motion.enter`).
@@ -204,6 +217,39 @@ Large toggle that marks a habit done.
   `done === total && total > 0` the count line is replaced by a `headline.large` primary-color
   "All done!"; the ring's own 100% pop + `haptic.celebrate` fire from `ProgressRing`. Presentation-
   only (the screen derives `done`/`total`/`date`).
+
+---
+
+## Settings components (`src/ui/settings/`)
+
+Neutral (non-habit-accent) building blocks for the Settings tab (build-plan Phase 7). They use
+only M3 surface/role tokens — a settings screen is neutral chrome, not habit-tinted (ui-rules §7,
+"one accent per surface").
+
+### `SettingsSection` 🟢
+A titled group of rows.
+- **Props:** `title?: string`, `children`, `footer?: string`.
+- **Render:** an optional `label.large` `onSurfaceVariant` section title, then a `Surface`
+  (`level={1}`, `radius.lg`) wrapping the rows with `outlineVariant` hairline dividers between
+  them; an optional `body.medium` `onSurfaceVariant` footer note beneath. Spacing from `space`.
+
+### `SettingsRow` 🟢
+One row inside a section: a leading label (+ optional description) and a trailing control slot.
+- **Props:** `label: string`, `description?: string`, `icon?: IconName`, `right?: ReactNode`
+  (the control — e.g. a `SegmentedControl`, `Chip`, value text, or chevron), `onPress?`
+  (makes the whole row a `Pressable` → for action rows like Export/Import/About),
+  `accessibilityLabel?`, `accessibilityHint?`.
+- **Render:** `title.medium` label over an optional `body.medium` `onSurfaceVariant` description,
+  trailing `right`. When `onPress` is set the row is a `Pressable` (≥48dp, press scale + haptic).
+  When a control (`right`) is interactive the row is NOT pressable (control owns the interaction).
+- **Rules:** tokens/roles only; no habit accent. Full-width controls (segmented) may render on
+  their own line below the label via the row's vertical layout.
+
+### `AccentPicker` — REUSE `ColorPicker` (habit components)
+The accent-key preference reuses the existing `ColorPicker` 🟢 (`value: HabitColorKey`,
+`onChange`). No new component. It is the single grid of the 8 habit swatches; the chosen key is
+persisted as the app accent preference. (Accent's *effect* is scoped for v1 — see the Phase-7
+handoff for exactly what the accent pref drives.)
 
 ---
 

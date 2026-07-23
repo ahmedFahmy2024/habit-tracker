@@ -4,3 +4,4 @@ export * from "./colors";
 export * from "./habitColors";
 export * from "./motion";
 export { useTheme, useHabitColors } from "./useTheme";
+export { ThemeSync } from "./ThemeSync";

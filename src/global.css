@@ -4,7 +4,13 @@
 
 /*
  * Material 3 Expressive color roles — mirror of docs/ui-tokens.md §1.2.
- * NativeWind darkMode: 'class' flips :root ↔ .dark via the theme switch.
+ * NativeWind darkMode: 'class' flips :root ↔ .dark:root via the theme switch.
+ * IMPORTANT: the dark CSS-variable block MUST use the `.dark:root` selector (not a bare
+ * `.dark`). On native, react-native-css-interop registers dark *variables* only from a
+ * `.dark:root` (or `:root[class~="dark"]`) selector — a bare `.dark { --x }` is treated as a
+ * descendant style rule, so its variables never take effect and surfaces stay light. (Verified
+ * against the installed react-native-css-interop `css-to-rn/normalize-selectors.js`
+ * `isRootDarkVariableSelector`.)
  * Font tokens preserved from the scaffold (web font stacks).
  */
 :root {
@@ -49,7 +55,7 @@
   --inverse-on-surface: #f1f1e9;
 }
 
-.dark {
+.dark:root {
   --primary: #9cd67d;
   --on-primary: #0a3900;
   --primary-container: #205107;

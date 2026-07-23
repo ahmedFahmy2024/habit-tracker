@@ -7,9 +7,6 @@ import type { Cadence, Weekday } from "@/domain";
 
 import { strings } from "./strings";
 
-/** Sunday-first display order of weekday numbers (0=Sun..6=Sat, docs/architecture.md §7.2). */
-export const WEEKDAY_DISPLAY_ORDER: readonly Weekday[] = [0, 1, 2, 3, 4, 5, 6];
-
 /** Are the given weekdays exactly Mon–Fri (a common shortcut worth naming)? */
 function isMonToFri(days: readonly Weekday[]): boolean {
   if (days.length !== 5) return false;

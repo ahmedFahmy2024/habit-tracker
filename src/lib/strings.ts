@@ -69,9 +69,72 @@ export const strings = {
     a11yDragHandle: "Drag to reorder",
     a11yEditRow: "Edit habit",
   },
+  /** Settings tab — preferences + data export/import + about (build-plan Phase 7). */
   settings: {
     title: "Settings",
     body: "Theme, week-start, and data options will live here.",
+
+    // --- Appearance section ---
+    appearanceSection: "Appearance",
+    themeModeLabel: "Theme",
+    themeModeDescription: "Match your device, or force light or dark.",
+    themeLight: "Light",
+    themeDark: "Dark",
+    themeSystem: "System",
+    accentLabel: "Accent color",
+    accentDescription: "The highlight color used across the app.",
+
+    // --- General section ---
+    generalSection: "General",
+    weekStartLabel: "Start week on",
+    weekStartDescription: "Only changes how weekdays are displayed.",
+    weekStartSunday: "Sunday",
+    weekStartMonday: "Monday",
+
+    // --- Data section ---
+    dataSection: "Your data",
+    dataDescription:
+      "Export a backup of every habit and check-in, or restore from one.",
+    exportLabel: "Export data",
+    exportDescription: "Save a JSON backup you can keep or move to a new device.",
+    importLabel: "Import data",
+    importDescription: "Restore from a backup file. This replaces your current data.",
+    /** Import is destructive (replace-all) — confirm first (docs/architecture.md §8). */
+    importConfirmTitle: "Replace all data?",
+    importConfirmBody:
+      "Importing replaces every current habit and check-in with the contents of the backup file. This can't be undone.",
+    importConfirmAction: "Choose file",
+    /** Success / failure toasts (Alerts). */
+    exportEmptyTitle: "Nothing to export",
+    exportEmptyBody: "Add a habit first — there's no data to back up yet.",
+    exportFailedTitle: "Export failed",
+    exportFailedBody: "Couldn't create the backup file. Please try again.",
+    sharingUnavailableTitle: "Sharing unavailable",
+    sharingUnavailableBody:
+      "This device can't open the share sheet. The backup was saved to the app's files.",
+    importSuccessTitle: "Import complete",
+    importSuccessBody: (habits: number, checkins: number) =>
+      `Restored ${habits} ${habits === 1 ? "habit" : "habits"} and ${checkins} ${
+        checkins === 1 ? "check-in" : "check-ins"
+      }.`,
+    importInvalidTitle: "Couldn't import this file",
+    importInvalidBody:
+      "This doesn't look like a Happit backup, or it was made by a newer version. No changes were made.",
+    importFailedTitle: "Import failed",
+    importFailedBody: "Something went wrong restoring the backup. No changes were made.",
+
+    // --- About section ---
+    aboutSection: "About",
+    aboutAppName: "Happit",
+    versionLabel: "Version",
+    /** e.g. "1.0.0". */
+    versionValue: (v: string) => v,
+
+    // --- A11y ---
+    a11yThemeMode: "Theme mode",
+    a11yWeekStart: "Start week on",
+    a11yExport: "Export your data",
+    a11yImport: "Import data from a backup file",
   },
   /** Habit detail — streak hero, stats, heatmap, and manage actions (build-plan Phase 6). */
   habitDetail: {

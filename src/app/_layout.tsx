@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { MigrationGate } from "@/db/MigrationGate";
 import { strings } from "@/lib";
+import { ThemeSync } from "@/theme";
 
 /**
  * Root layout. Provider order (docs/architecture.md §6):
@@ -20,6 +21,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <StatusBar style="auto" />
       <MigrationGate>
+        <ThemeSync />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen

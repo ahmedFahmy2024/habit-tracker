@@ -3,5 +3,6 @@ export { haptics, type HapticEvent } from "./haptics";
 export { newId } from "./id";
 export { logger } from "./logger";
 export { strings } from "./strings";
-export { cadenceSummary, WEEKDAY_DISPLAY_ORDER } from "./cadence";
+export { cadenceSummary } from "./cadence";
 export { todayString, formatDayLong, formatDayShort } from "./date";
+export { weekdayDisplayOrder, reorderBySunday } from "./weekOrder";

@@ -9,7 +9,9 @@
 Per-phase handoff records: [handoffs/](./handoffs/) (written at the end of each phase — see
 [../AGENTS.md](../AGENTS.md) § Phase handoffs).
 
-Last updated: _2026-07-23 — Phase 6 complete: Habit detail & history (trustworthy stats). New `useHabitStats(id, today)` (`src/data/habitStats.ts`) derives current/best streak, completion %, heatmap buckets, and total count from the pure domain in one §9-memoized `useMemo`; the `StreakBadge` hero (`display.medium` emphasized, accent-tinted, quiet "No streak yet" at 0), the `Heatmap` (**pure View/flex grid**, last 26 weeks, horizontally scrollable; per-cell `Pressable` backfill of past/today via `toggleCheckin`, future cells inert; done=accent / missed=`errorContainer` / unscheduled=`surfaceContainerHighest`), a 3-stat row (Best · Completion · Check-ins), and Edit/Archive/**Delete** actions. Added the **`deleteHabit`** hard-delete writer + **`PRAGMA foreign_keys = ON`** (so the checkins FK cascade actually fires) + `formatDayShort` + `heatmap.*` geometry tokens. `habit/[id].tsx` rewritten thin (loading gap + not-found). tsc/lint clean, expo-doctor 20/20; **verified live on Android emulator (Pixel_10, Expo Go)** — created a daily habit, opened detail, **backfilled a past day** (Best/Completion/Check-ins + heatmap cell update reactively), **checked today** → "🔥 1 day streak", un-check reversed it, Edit pre-populated, **Delete → destructive confirm → hard delete + cascade** (Today empty). The exact stat pipeline also hand-verified against a throwaway domain script (4 cadence cases, all exact). iOS unverified (no macOS host). NOTE: the Pixel_10 AVD needed `-memory 3072` — at its default 2 GB the low-memory-killer bounced Expo Go._
+Last updated: _2026-07-23 — Phase 7 code-complete (🟨, on-device confirmation pending): Settings & data safety. Persisted zustand prefs store (`src/store/preferences.ts`) — theme mode / accent / week-start in a `key_value` sqlite table, hydrated **synchronously** (no theme flash); `ThemeSync` drives NativeWind `setColorScheme` (system follows OS). Week-start is **display-only** (`src/lib/weekOrder.ts` — reorders CadencePicker chips + Heatmap legend/rows; 35 domain tests still green). Lossless **export/import** (`src/data/backup.ts`) — versioned JSON via `expo-file-system` File/Paths + `expo-sharing`; import picks (`expo-document-picker`), validates (rejects newer version + orphan check-ins), and **replace-all in one `withTransactionSync`**. Thin Settings screen + new `SegmentedControl`/`SettingsSection`/`SettingsRow`; accent picker reuses `ColorPicker`; About+version from `expo-constants`. New deps: `expo-file-system`/`expo-sharing`/`expo-document-picker` + migration `0001` (key_value). **Found + fixed a latent dark-theme bug: `global.css` dark variables need `.dark:root`, not a bare `.dark`, or surfaces don't flip on native.** tsc/lint (0 warnings)/expo-doctor 20/20 clean; logic proven by a Node script. **On-device: Settings renders + prefs persist + theme flips habit colors/native tabs verified; the `.dark:root` surface-flip fix and the export→wipe→import round-trip are NOT yet live-confirmed** (emulator/adb wedged during testing) — see [handoffs/phase-7-BLOCKERS.md](./handoffs/phase-7-BLOCKERS.md). iOS unverified._
+
+<!-- prior: _2026-07-23 — Phase 6 complete: Habit detail & history (trustworthy stats). New `useHabitStats(id, today)` (`src/data/habitStats.ts`) derives current/best streak, completion %, heatmap buckets, and total count from the pure domain in one §9-memoized `useMemo`; the `StreakBadge` hero (`display.medium` emphasized, accent-tinted, quiet "No streak yet" at 0), the `Heatmap` (**pure View/flex grid**, last 26 weeks, horizontally scrollable; per-cell `Pressable` backfill of past/today via `toggleCheckin`, future cells inert; done=accent / missed=`errorContainer` / unscheduled=`surfaceContainerHighest`), a 3-stat row (Best · Completion · Check-ins), and Edit/Archive/**Delete** actions. Added the **`deleteHabit`** hard-delete writer + **`PRAGMA foreign_keys = ON`** (so the checkins FK cascade actually fires) + `formatDayShort` + `heatmap.*` geometry tokens. `habit/[id].tsx` rewritten thin (loading gap + not-found). tsc/lint clean, expo-doctor 20/20; **verified live on Android emulator (Pixel_10, Expo Go)** — created a daily habit, opened detail, **backfilled a past day** (Best/Completion/Check-ins + heatmap cell update reactively), **checked today** → "🔥 1 day streak", un-check reversed it, Edit pre-populated, **Delete → destructive confirm → hard delete + cascade** (Today empty). The exact stat pipeline also hand-verified against a throwaway domain script (4 cadence cases, all exact). iOS unverified (no macOS host). NOTE: the Pixel_10 AVD needed `-memory 3072` — at its default 2 GB the low-memory-killer bounced Expo Go._ -->
 
 ---
 
@@ -24,7 +26,7 @@ Last updated: _2026-07-23 — Phase 6 complete: Habit detail & history (trustwor
 | 4 | Create & manage habits | ✅ |
 | 5 | Today screen (core loop) | ✅ |
 | 6 | Habit detail & history | ✅ |
-| 7 | Settings & data safety | ⬜ |
+| 7 | Settings & data safety | 🟨 |
 | 8 | Polish, a11y, performance | ⬜ |
 
 ---
@@ -111,12 +113,24 @@ Last updated: _2026-07-23 — Phase 6 complete: Habit detail & history (trustwor
       reactively; check-today→"🔥 1"; future never toggled; edit/archive/delete work; tsc/lint
       clean, expo-doctor 20/20, no red-box. *(iOS unverified — no macOS host.)*
 
-## Phase 7 — Settings & data safety ⬜
-- [ ] theme mode / accent / week-start (persisted)
-- [ ] export JSON
-- [ ] import/restore
-- [ ] about + version
-- [ ] **Done-when:** prefs persist + instant re-theme; export→wipe→import lossless
+## Phase 7 — Settings & data safety 🟨 (code-complete; on-device confirmation pending)
+- [x] theme mode / accent / week-start — **persisted** in a `key_value` sqlite table, hydrated
+      **synchronously** (no theme flash); `ThemeSync` drives NativeWind `setColorScheme` (system
+      follows OS). Store: `src/store/preferences.ts`.
+- [x] week-start = **display-only** (`src/lib/weekOrder.ts`) — reorders CadencePicker chips +
+      Heatmap legend/rows; domain untouched (35 domain tests still green).
+- [x] export JSON — `src/data/backup.ts`: versioned `{version,exportedAt,habits[],checkins[]}`
+      to a file (`expo-file-system` File/Paths) + share sheet (`expo-sharing`).
+- [x] import/restore — pick (`expo-document-picker`) → validate (rejects newer version + orphan
+      check-ins) → **replace-all in one `withTransactionSync`** (lossless, all-or-nothing).
+- [x] about + version (`Constants.expoConfig?.version`)
+- [x] thin Settings screen + new `SegmentedControl` / `SettingsSection` / `SettingsRow` (🟢);
+      accent picker = reuse `ColorPicker`.
+- [x] tsc / lint (0 warnings) / expo-doctor 20/20 clean; logic proven by a throwaway Node script.
+- [ ] **Done-when (partially met):** prefs persist ✅ + instant re-theme (habit colors + native
+      tabs ✅; **NativeWind surfaces flip fix applied but NOT yet live-confirmed** — the
+      `.dark:root` fix); **export→wipe→import round-trip NOT yet run on-device**. See
+      [handoffs/phase-7-BLOCKERS.md](./handoffs/phase-7-BLOCKERS.md) for exact remaining steps.
 
 ## Phase 8 — Polish, a11y, performance ⬜
 - [ ] ui-rules §1 checklist audit
@@ -213,6 +227,30 @@ _Record any deviation from the docs here, with a date and reason, so the docs st
 - **2026-07-23 (Phase 6)** — On-device verification needed the Pixel_10 AVD booted with
   **`-memory 3072`**; at its default **2 GB** the low-memory-killer repeatedly bounced Expo Go to
   the launcher (`adb logcat … "mem-pressure-event"`). Not a code issue.
+- **2026-07-23 (Phase 7)** — **Prefs persistence = a `key_value` sqlite table hydrated
+  synchronously** (`expoDb.getFirstSync` at store module-load), **not** zustand `persist` /
+  AsyncStorage — the sync read is present on first paint, so **no theme flash**; no new dep.
+- **2026-07-23 (Phase 7)** — **`system` theme = NativeWind `setColorScheme('system')`** (native OS
+  follow); explicit light/dark override it. One code path via `ThemeSync` (inside MigrationGate);
+  no inline light/dark branches.
+- **2026-07-23 (Phase 7)** — **Import = replace-all in one `withTransactionSync`, versioned +
+  validated** (rejects a newer `version` and orphan check-ins); export/import file shape is
+  `{version,exportedAt,habits[],checkins[]}` (raw rows) delivered via `expo-sharing` /
+  `expo-document-picker`. Prefs are NOT in the backup.
+- **2026-07-23 (Phase 7)** — **⚠️ `global.css` dark CSS variables must use `.dark:root`, not a
+  bare `.dark`.** On native, `react-native-css-interop` only registers dark *variables* from a
+  `.dark:root` / `:root[class~="dark"]` selector (verified in `css-to-rn/normalize-selectors.js`
+  `isRootDarkVariableSelector`); a bare `.dark { --x }` is a descendant style rule, so surfaces
+  don't flip in dark mode. Latent pre-Phase-7 bug (no phase had eyeballed dark surfaces on-device)
+  — fixed. Needs a Metro `--clear` after the change.
+- **2026-07-23 (Phase 7)** — **`importData` reads the picked file per-platform:** Android
+  `copyToCacheDirectory:false` + read the SAF `content://` in place (Expo Go denies READ on the
+  picker's app-cache copy → `ERR_INVALID_PERMISSION`); iOS keeps the copy. Verified from installed
+  expo source.
+- **2026-07-23 (Phase 7)** — **Week-start is display-only** via pure `src/lib/weekOrder.ts`
+  (`weekdayDisplayOrder` / `reorderBySunday`); `src/domain` never receives `weekStart`. The old
+  Sunday-first `WEEKDAY_DISPLAY_ORDER` constant was removed as superseded. 35 domain tests confirm
+  no streak/schedule regression.
 
 ## Open questions / parking lot
 - [ ] Finalize the accent source color → regenerate M3 palette hex in ui-tokens §1.2

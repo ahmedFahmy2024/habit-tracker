@@ -69,6 +69,9 @@
 | `babel-plugin-inline-import` (dev) | 3.0.0 | Inline `.sql` migrations as strings for drizzle's Expo migrator | ✅ installed (Phase 2) |
 | `react-native-draggable-flatlist` | 4.0.3 | Drag-to-reorder Habits list (persist `sortOrder`) | ✅ installed (Phase 4) — see §10 |
 | `react-native-svg` | 15.15.4 | SVG stroke-draw for `CheckControl` check + `ProgressRing` (Today) | ✅ installed (Phase 5) — see §11 |
+| `expo-file-system` | 57.0.1 | Write/read the export JSON file (new `File`/`Paths` API) | ✅ installed (Phase 7) — see §12 |
+| `expo-sharing` | 57.0.7 | OS share sheet to deliver the export file | ✅ installed (Phase 7) — see §12 |
+| `expo-document-picker` | 57.0.1 | Pick a backup JSON file to import | ✅ installed (Phase 7) — see §12 |
 
 Install commands used (for reference):
 ```bash
@@ -309,9 +312,16 @@ directly.
 
 ## 8. zustand
 
-- Preference stores only (theme mode, accent key, week-start). Persist via
-  `persist` middleware. Keep stores tiny and flat. See
-  [code-standards.md](./code-standards.md) §6.
+- Preference stores only (theme mode, accent key, week-start). Keep stores tiny and flat.
+  See [code-standards.md](./code-standards.md) §6.
+- **Persistence (decided Phase 7): a `key_value` table in the same `happit.db`, not the
+  `persist` middleware / AsyncStorage.** Reason: we already own a synchronous sqlite
+  connection (`expoDb`), so the store hydrates **synchronously at module load** via
+  `getFirstSync` — the value is present on the very first render, so there is **no theme
+  flash** on cold start (the `persist` middleware rehydrates async, which needs a
+  `hasHydrated` gate to avoid a light→dark flash). Setters write-through synchronously with
+  `runSync`. No new dependency. The `key_value` table is created by migration `0001`.
+  Store lives in `src/store/preferences.ts`.
 
 ## 10. react-native-draggable-flatlist (reorder) + ReanimatedSwipeable (archive)
 
@@ -380,6 +390,38 @@ the more Expressive result than a View-clip arc.
 - **No extra config.** react-native-svg autolinks under Expo; no metro/babel change. Renders
   inside the existing `GestureHandlerRootView` app tree. (Path lengths are computed as plain
   geometry constants, not measured, to keep the worklet pure.)
+
+## 12. Settings & data safety (Phase 7): file-system + sharing + document-picker
+
+Installed with `bunx expo install expo-file-system expo-sharing expo-document-picker` →
+`57.0.1 / 57.0.7 / 57.0.1`. **APIs verified against the installed `node_modules` source**
+(the SDK-54+ `expo-file-system` rewrite — the old `writeAsStringAsync`/`documentDirectory`
+functions are the deprecated *legacy* subpath; the current API is class-based):
+
+- **`expo-file-system` — `File` / `Paths` (from `build/File.d.ts`, `build/Paths.d.ts`,
+  `build/internal/NativeFileSystem.types.d.ts`):**
+  ```ts
+  import { File, Paths } from 'expo-file-system';
+  const file = new File(Paths.cache, 'happit-backup-YYYY-MM-DD.json');
+  file.create({ overwrite: true }); // FileCreateOptions
+  file.write(jsonString);           // write(content: string | Uint8Array)
+  const text = file.textSync();     // sync read; async `text()` also exists
+  file.exists; file.delete(); file.uri; // fields/methods on the base class
+  ```
+  `Paths.cache` / `Paths.document` are `Directory` getters. The `File` constructor joins its
+  args into a URI and does **not** require the file to exist yet.
+- **`expo-sharing` (from `build/Sharing.d.ts`):** `isAvailableAsync(): Promise<boolean>` +
+  `shareAsync(url: string, options?)`. Pass the file's `uri`. Guard with `isAvailableAsync`
+  first (share sheet is unavailable on some platforms/simulators).
+- **`expo-document-picker` (from `build/index.d.ts` + `build/types.d.ts`):**
+  `getDocumentAsync({ type, copyToCacheDirectory, multiple })` → a discriminated
+  `DocumentPickerResult`: `{ canceled: true, assets: null }` or
+  `{ canceled: false, assets: [{ uri, name, size?, mimeType? }] }`. We read the picked file
+  by `new File(asset.uri).text()`. `type: 'application/json'`, `copyToCacheDirectory: true`.
+
+Config plugin `expo-sharing` was auto-added to `app.json` by `expo install`. No other config
+needed; all three autolink under Expo. The export/import layer lives in `src/data/backup.ts`
+(thin wrappers; the Settings route stays thin per architecture §3).
 
 ## 9. Versions / upgrade policy
 
