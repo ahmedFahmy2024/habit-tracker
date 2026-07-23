@@ -48,6 +48,8 @@ export default function EditHabitScreen() {
     color: habit.color as HabitColorKey,
     icon: habit.icon as IconName,
     cadence: cadenceOf(habit),
+    reminderEnabled: habit.reminderEnabled,
+    reminderTime: habit.reminderTime,
   };
 
   return (

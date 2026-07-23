@@ -15,6 +15,13 @@
       "when": 1784821047234,
       "tag": "0001_lush_obadiah_stane",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1784837908160,
+      "tag": "0002_bumpy_korath",
+      "breakpoints": true
     }
   ]
 }

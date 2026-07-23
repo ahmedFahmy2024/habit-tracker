@@ -6,3 +6,4 @@ export {
   type ThemeMode,
   type WeekStart,
 } from "./preferences";
+export { remindersEnabled } from "./reminders";

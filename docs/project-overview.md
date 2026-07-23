@@ -29,6 +29,22 @@ Expo, whose design language is **Material 3 Expressive**.
    across timezone changes, DST, and days the app was never opened.
 4. **Zero data loss.** Local data survives app updates via migrations. See
    [architecture.md](./architecture.md).
+5. **Stay-on-track surfaces.** The habit stays present outside the app — a **local
+   reminder** nudges the user when a scheduled habit is still unchecked, and a
+   **home-screen widget** shows today's progress and streaks at a glance. These reinforce
+   the daily loop; they never replace it or add a network dependency.
+
+## 3a. Signature features (the five)
+
+The features that define what Happit *feels* like, and where each is specified/built:
+
+| Feature | What it is | Scope | Where |
+| --- | --- | --- | --- |
+| **Streaks** | Consecutive-scheduled-day count per habit, ending today/yesterday. Always correct across tz/DST/unopened days. | v1 core | [architecture.md](./architecture.md) §7; build-plan Phase 2/5/6 |
+| **Hit graph (heatmap)** | Calendar heatmap of check-ins on the habit-detail screen; taps backfill past days (never future). | v1 core | build-plan Phase 6; `Heatmap` in [ui-registry.md](./ui-registry.md) |
+| **Haptics** | Semantic haptic tokens (`check`, `success`, `select`…) fired on every meaningful interaction, respecting the OS reduce-motion/haptics setting. | v1 core | `src/lib/haptics.ts`; build-plan Phase 1; [ui-tokens.md](./ui-tokens.md) §7 |
+| **Local notifications / reminders** | Per-habit local reminder at a chosen time on scheduled days; no push server, no account. Nudges only while unchecked. | **v1** (Phase 9) | build-plan Phase 9; `expo-notifications` in [library-docs.md](./library-docs.md) |
+| **Live home-screen widget** | Native widget (iOS WidgetKit / Android Glance) showing today's completion ring + a top streak, refreshed from shared local data. | **v1** (Phase 10) | build-plan Phase 10; [library-docs.md](./library-docs.md) |
 
 ## 4. Non-goals (explicitly out of scope for v1)
 
@@ -36,10 +52,16 @@ These are listed so we never accidentally build them:
 
 - ❌ Accounts, login, cloud sync, multi-device. (Local-only by decision.)
 - ❌ Social features, sharing, leaderboards.
-- ❌ Push notifications / reminders. *(Deferred to v2 — see §7. Do not build in v1.)*
+- ❌ **Push** notifications (server-sent). We ship **local** reminders only (§3a, Phase 9) —
+  scheduled on-device, no push token, no server, works in airplane mode.
 - ❌ Web target. Android + iOS only. Code may run on web but it is not a supported surface.
 - ❌ Habit "templates" marketplace, AI suggestions, coaching.
-- ❌ Widgets, watch apps, home-screen quick actions.
+- ❌ Watch apps, home-screen quick actions. *(The home-screen **widget** is now in scope —
+  §3a, Phase 10. Watch/quick-actions remain out.)*
+
+> Local notifications and the home-screen widget were previously deferred to v2/v3. They are
+> now **v1 scope** (Phases 9 & 10). Both are strictly local — they add no accounts, no
+> network, and no push server, so the offline-first, single-user constraint still holds.
 
 ## 5. Core concepts (the domain vocabulary)
 
@@ -64,14 +86,24 @@ Four screens, mapped to navigation in [architecture.md](./architecture.md) §6.
 2. **Habits** — manage the full list: add, edit, reorder, archive.
 3. **Habit detail** — one habit's history: calendar heatmap, current & best streak,
    completion rate. Reached by tapping a habit.
-4. **Settings** — theme (light/dark/system), accent color, week-start day, data
-   export/import, about.
+4. **Settings** — theme (light/dark/system), accent color, week-start day, **reminder
+   defaults & per-habit reminder toggles**, data export/import, about.
+
+Beyond the four screens, two features live outside the app's own navigation:
+
+5. **Reminders** (Phase 9) — configured on the add/edit-habit form and in Settings; surfaced
+   as OS local notifications on scheduled days.
+6. **Home-screen widget** (Phase 10) — a native widget target (not a JS screen) reading
+   shared local data to show today's ring + top streak.
 
 ## 7. Roadmap beyond v1 (context only — do not build)
 
-- v2: Local notifications / reminders (`expo-notifications`).
 - v2: Optional encrypted backup export to a file the user controls.
-- v3: Widgets.
+- v2: Rich widget variants (multiple sizes, lock-screen / Live Activity).
+- v3: Watch app; home-screen quick actions.
+
+> Local reminders and the home-screen widget moved **into v1** (§3a, build-plan Phases 9 & 10)
+> and are no longer roadmap items.
 
 ## 8. How the docs fit together
 

@@ -21,6 +21,8 @@ import { expoDb, db } from "@/db/client";
 import { checkins, habits, type Checkin, type Habit } from "@/db/schema";
 import { logger } from "@/lib";
 
+import { reconcileReminders } from "./habits";
+
 /** Bump when the on-disk shape changes incompatibly. Import rejects files with a higher version. */
 export const BACKUP_VERSION = 1 as const;
 
@@ -139,6 +141,11 @@ export async function importData(): Promise<ImportOutcome> {
 
   try {
     replaceAll(backup);
+    // Replace-all wiped the OS reminders' habits out from under them — reconcile every reminder
+    // against the freshly-imported rows (cancel-all then reschedule, gated on the master switch;
+    // build-plan Phase 9). Reads the just-restored rows itself and swallows errors, so a scheduling
+    // hiccup never fails an import whose data is already committed.
+    await reconcileReminders();
     return {
       status: "imported",
       habitCount: backup.habits.length,
@@ -201,6 +208,11 @@ function validateHabit(h: unknown): Habit | null {
     cadenceType: h.cadenceType as Habit["cadenceType"],
     weekdays: typeof h.weekdays === "string" ? h.weekdays : null,
     weeklyTarget: typeof h.weeklyTarget === "number" ? h.weeklyTarget : null,
+    // Reminder columns (Phase 9). Pre-Phase-9 backups lack them → default to off/none, so an old
+    // backup restores as "no reminders" rather than being rejected.
+    reminderEnabled: h.reminderEnabled === true,
+    reminderTime:
+      typeof h.reminderTime === "number" ? h.reminderTime : null,
     sortOrder: h.sortOrder,
     archivedAt: typeof h.archivedAt === "string" ? h.archivedAt : null,
     createdAt:
@@ -248,8 +260,8 @@ function replaceAll(backup: BackupFile): void {
     for (const h of backup.habits) {
       expoDb.runSync(
         "INSERT INTO habits " +
-          "(id, name, color, icon, cadence_type, weekdays, weekly_target, sort_order, archived_at, created_at) " +
-          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          "(id, name, color, icon, cadence_type, weekdays, weekly_target, reminder_enabled, reminder_time, sort_order, archived_at, created_at) " +
+          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         h.id,
         h.name,
         h.color,
@@ -257,6 +269,8 @@ function replaceAll(backup: BackupFile): void {
         h.cadenceType,
         h.weekdays,
         h.weeklyTarget,
+        h.reminderEnabled ? 1 : 0,
+        h.reminderTime,
         h.sortOrder,
         h.archivedAt,
         h.createdAt,

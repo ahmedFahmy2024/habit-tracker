@@ -9,7 +9,9 @@
 Per-phase handoff records: [handoffs/](./handoffs/) (written at the end of each phase — see
 [../AGENTS.md](../AGENTS.md) § Phase handoffs).
 
-Last updated: _2026-07-23 — **Phase 8 complete (✅) — v1 feature-complete.** Polish/a11y/perf pass + closed the three inherited Phase-7 on-device gaps (so **Phase 7 flipped 🟨→✅**): the `.dark:root` surface flip, the export→wipe→import round-trip (lossless — "Restored 2 habits and 3 check-ins", streaks recomputed 🔥2), and the week-start chip reorder are all **confirmed live on the Pixel_10**. Wired the **accent preference** to re-tint app chrome (FAB + all `Button` variants + Today `ProgressRing` + "All done!") via a new `useAccent()` hook + an `onAccent` palette token (AA-checked) — habit cards keep their own color (verified purple accent live). Full **ui-rules §1** + **a11y §8** audit (dynamic type scales to 1.5× without clipping); **§8 empty/error/loading** states all real; **§9** perf sound (memoized stats, no theme flash on cold start). **App icon + splash + config**: generated M3 brand assets (green squircle + cream check) via `scripts/gen-icons.mjs`; `app.json` → name **Happit** / slug+scheme `happit` / cream+dark splash / bundle id `com.happit.app`; **local `expo prebuild` succeeds clean** (real EAS build deferred by decision). tsc / lint (0) / expo-doctor 20/20 / 35 domain tests green. project-overview §3 goals demonstrably met on-device. iOS unverified (no macOS host). See [handoffs/phase-8-polish.md](./handoffs/phase-8-polish.md)._
+Last updated: _2026-07-23 — **Phase 9 complete (✅): Local reminders.** Opt-in per-habit local notification nudges on scheduled days (no push server, airplane-mode-safe). New `src/lib/notifications.ts` wrapper (components never import `expo-notifications` — mirrors `haptics.ts`): `ensurePermission`/`scheduleHabitReminder`/`cancelHabitReminder`/`rescheduleAll` + a data-layer `reconcileReminders`. **Trigger correction (opensrc-verified):** the CALENDAR trigger library-docs §13 sketched **throws "not supported on Android"** — used **WEEKLY** instead (weekday **1=Sun…7=Sat** per Android `Calendar.DAY_OF_WEEK`), one per scheduled weekday derived from cadence (weekdays→its set; daily/weekly_count→all 7). Schema: added flat **`reminderEnabled` + `reminderTime`** (minutes-past-midnight) + migration `0002`; reminders **read cadence but never touch streaks**. Habit form gained a **Toggle + `@react-native-community/datetimepicker` TimePickerField**; Settings gained a **Reminders section** (master switch, default time, permission state + request/open-settings, test reminder). Rescheduled on create/edit/archive/delete/cadence-change/import/app-foreground (cancel-first ⇒ no duplicates). **Key on-device finding: expo-notifications AND datetimepicker were removed from / are absent in Expo Go (SDK 53+), throwing at import.** Both are **lazy-loaded behind an `isRunningInExpoGo()` guard** so the app runs fully in Expo Go with reminders inert + a clear "Unavailable in Expo Go" state — **live-verified on Pixel_10** (no red-box, full reminder UI renders, graceful degradation). Actual firing/cancel needs a **dev build** (deferred, same class as Phase 10). tsc / lint (0) / expo-doctor 20/20 / 35 domain tests green. iOS unverified. See [handoffs/phase-9-reminders.md](./handoffs/phase-9-reminders.md)._
+
+<!-- prior: _2026-07-23 — **Phase 8 complete (✅) — v1 feature-complete.** Polish/a11y/perf pass + closed the three inherited Phase-7 on-device gaps (so **Phase 7 flipped 🟨→✅**): the `.dark:root` surface flip, the export→wipe→import round-trip (lossless — "Restored 2 habits and 3 check-ins", streaks recomputed 🔥2), and the week-start chip reorder are all **confirmed live on the Pixel_10**. Wired the **accent preference** to re-tint app chrome (FAB + all `Button` variants + Today `ProgressRing` + "All done!") via a new `useAccent()` hook + an `onAccent` palette token (AA-checked) — habit cards keep their own color (verified purple accent live). Full **ui-rules §1** + **a11y §8** audit (dynamic type scales to 1.5× without clipping); **§8 empty/error/loading** states all real; **§9** perf sound (memoized stats, no theme flash on cold start). **App icon + splash + config**: generated M3 brand assets (green squircle + cream check) via `scripts/gen-icons.mjs`; `app.json` → name **Happit** / slug+scheme `happit` / cream+dark splash / bundle id `com.happit.app`; **local `expo prebuild` succeeds clean** (real EAS build deferred by decision). tsc / lint (0) / expo-doctor 20/20 / 35 domain tests green. project-overview §3 goals demonstrably met on-device. iOS unverified (no macOS host). See [handoffs/phase-8-polish.md](./handoffs/phase-8-polish.md)._ -->
 
 <!-- prior: _2026-07-23 — Phase 7 code-complete (🟨, on-device confirmation pending): Settings & data safety. Persisted zustand prefs store (`src/store/preferences.ts`) — theme mode / accent / week-start in a `key_value` sqlite table, hydrated **synchronously** (no theme flash); `ThemeSync` drives NativeWind `setColorScheme` (system follows OS). Week-start is **display-only** (`src/lib/weekOrder.ts` — reorders CadencePicker chips + Heatmap legend/rows; 35 domain tests still green). Lossless **export/import** (`src/data/backup.ts`) — versioned JSON via `expo-file-system` File/Paths + `expo-sharing`; import picks (`expo-document-picker`), validates (rejects newer version + orphan check-ins), and **replace-all in one `withTransactionSync`**. Thin Settings screen + new `SegmentedControl`/`SettingsSection`/`SettingsRow`; accent picker reuses `ColorPicker`; About+version from `expo-constants`. New deps: `expo-file-system`/`expo-sharing`/`expo-document-picker` + migration `0001` (key_value). **Found + fixed a latent dark-theme bug: `global.css` dark variables need `.dark:root`, not a bare `.dark`, or surfaces don't flip on native.** tsc/lint (0 warnings)/expo-doctor 20/20 clean; logic proven by a Node script. **On-device: Settings renders + prefs persist + theme flips habit colors/native tabs verified; the `.dark:root` surface-flip fix and the export→wipe→import round-trip are NOT yet live-confirmed** (emulator/adb wedged during testing) — see [handoffs/phase-7-BLOCKERS.md](./handoffs/phase-7-BLOCKERS.md). iOS unverified._ -->
 
@@ -30,6 +32,13 @@ Last updated: _2026-07-23 — **Phase 8 complete (✅) — v1 feature-complete.*
 | 6 | Habit detail & history | ✅ |
 | 7 | Settings & data safety | ✅ |
 | 8 | Polish, a11y, performance | ✅ |
+| 9 | Local reminders (notifications) | ✅ |
+| 10 | Home-screen widget (live) | ⬜ planned · needs dev build |
+
+> **Phases 9 & 10 are newly-scoped v1 features** (promoted from the old v2/v3 roadmap): local
+> reminders via `expo-notifications` (Phase 9 ✅), and a native home-screen widget. Streaks, the hit-graph
+> heatmap, and haptics were already delivered in Phases 2/6 and 1 respectively. See
+> [build-plan.md](./build-plan.md) Phases 9–10 and [project-overview.md](./project-overview.md) §3a.
 
 ---
 
@@ -147,6 +156,41 @@ Last updated: _2026-07-23 — **Phase 8 complete (✅) — v1 feature-complete.*
 - [x] **Done-when:** project-overview §3 goals demonstrably met on the Pixel_10 (frictionless <5s
       check-in · M3 Expressive · trustworthy streaks/history · zero data loss). tsc/lint/doctor
       clean, 35 domain tests green. *(iOS unverified — no macOS host.)*
+
+## Phase 9 — Local reminders (notifications) ✅
+- [x] added `expo-notifications@57.0.7` + `@react-native-community/datetimepicker@9.1.0`; config
+      plugin (`expo-notifications` tint `#386a20`) in `app.json`. Android `reminders` channel is
+      created at **runtime** (`setNotificationChannelAsync`) — the plugin doesn't create custom channels.
+- [x] `src/lib/notifications.ts` wrapper (`ensurePermission`/`getPermissionState`/`scheduleHabitReminder`/
+      `cancelHabitReminder`/`rescheduleAll`/`scheduleTestReminder`/`remindersAvailable`) — components
+      never import `expo-notifications` directly (mirrors `haptics.ts`); data-layer `reconcileReminders`
+      wraps `rescheduleAll` with the master-switch gate.
+- [x] schema: flat **`reminderEnabled`** (bool) + **`reminderTime`** (minutes-past-midnight, nullable)
+      on habit + migration **`0002`**; reminders **read cadence but never feed into streaks**.
+- [x] one **WEEKLY-trigger** notification per scheduled weekday (CALENDAR is iOS-only / throws on
+      Android — verified from source), derived from cadence: weekdays→its set, daily/weekly_count→all 7.
+- [x] add/edit-habit form: `Toggle` + `TimePickerField` (datetimepicker) → schedule/cancel on save
+      (create/update writers call `syncReminder`; time defaults to the Settings default).
+- [x] Settings: **Reminders section** (`ReminderSettings`) — master enable, default time, permission
+      state + request/open-settings action, test reminder; denied **and** OS-off/Expo-Go states surfaced.
+- [x] reschedule on create/edit/archive/delete/cadence-change/import/**app-foreground** (`ReminderSync`);
+      cancel-this-habit's-ids-first ⇒ **no duplicates**.
+- [x] **Done-when (met, with a dev-build caveat):** all wiring + graceful-degradation **verified live
+      on Pixel_10 (Expo Go)** — app boots with no red-box, the full reminder UI (form toggle+time,
+      Settings section) renders, and reminders are cleanly **inert with a clear "Unavailable in Expo
+      Go" state** (no silent failure). **Actual OS firing/cancel/reschedule needs a dev build** —
+      expo-notifications + datetimepicker are absent from Expo Go (SDK 53+) and throw at import; both
+      are lazy-loaded behind an `isRunningInExpoGo()` guard. tsc/lint (0)/expo-doctor 20/20, 35 domain
+      tests green. iOS unverified (no macOS host). See [handoffs/phase-9-reminders.md](./handoffs/phase-9-reminders.md).
+
+## Phase 10 — Home-screen widget (live) ⬜ planned · needs dev build (NOT Expo Go)
+- [ ] pin the widget config-plugin/native-target approach; record verified setup in library-docs §14
+- [ ] shared today-summary snapshot → App Group (iOS) / SharedPreferences (Android) on check-in change
+- [ ] `src/lib/widget.ts` `publishTodaySnapshot()` from check-in write path + foreground (debounced)
+- [ ] iOS WidgetKit target (small + medium): today's ring + top streak, accent tint
+- [ ] Android Glance/RemoteViews provider (same content)
+- [ ] widget tap deep-links to Today; refresh on data write + day rollover; no network
+- [ ] **Done-when:** on a dev build, widget shows current day's ring + top streak; in-app check-in updates it within refresh policy; tap opens Today; day rollover resets. Android verified on device; **iOS unverified if no macOS host** (note in handoff).
 
 ---
 
@@ -286,6 +330,44 @@ _Record any deviation from the docs here, with a date and reason, so the docs st
   bundle download + dev transforms inflate it); the architecture meets the budget by design (Hermes,
   sync prefs hydration → no theme flash confirmed on a cold launch, tiny migration, memoized stats).
   A real number needs a release build / EAS Observe — deferred with the local-prebuild-only decision.
+- **2026-07-23 (Phase 9)** — **Local reminders + the home-screen widget were promoted from the old
+  v2/v3 roadmap into v1 scope** (build-plan Phases 9 & 10, project-overview §3a/§7). Both stay
+  strictly **local**: no accounts, no network, no push server/token — the offline-first, single-user
+  constraint still holds. Phase 9 (reminders) delivered here; Phase 10 (widget) remains planned.
+- **2026-07-23 (Phase 9)** — **⚠️ Trigger = WEEKLY, not CALENDAR.** [library-docs.md](./library-docs.md)
+  §13 sketched a `SchedulableTriggerInputTypes.CALENDAR` trigger, but the **installed
+  expo-notifications@57.0.7 Android source** (`NotificationScheduler.kt::triggerFromParams`) rejects
+  it — `else -> throw "Trigger of type: calendar is not supported on Android"` (CALENDAR is
+  `@platform ios`). The cross-platform repeating-weekday trigger is **WEEKLY**, mapped natively via
+  `Calendar.DAY_OF_WEEK` (**1=Sun…7=Sat**, so domain Weekday 0..6 → `weekday+1`). One WEEKLY
+  notification is scheduled per scheduled weekday. library-docs §13 corrected.
+- **2026-07-23 (Phase 9)** — **⚠️ expo-notifications AND @react-native-community/datetimepicker are
+  unavailable in Expo Go (SDK 53+) and throw at *import time* on Android** (notifications'
+  `TokenEmitter` calls `warnOfExpoGoPushUsage()` at module scope; the picker does
+  `TurboModuleRegistry.getEnforcing`). A plain top-level import red-boxes the whole app in Expo Go.
+  **Both are lazy-loaded via `require()` behind an `isRunningInExpoGo()` guard** (`src/lib/notifications.ts`
+  `getNotifications()`, `TimePickerField` `getPicker()`), so every reminder function no-ops in Expo Go
+  and the UI shows a clear **"Unavailable in Expo Go"** state — verified live (no crash). Full behavior
+  needs a **dev build**; library-docs §13's "works in Expo Go for basic testing" note corrected.
+- **2026-07-23 (Phase 9)** — **Reminders read cadence but never touch streaks.** `reminderWeekdays`
+  derives fire-days from the cadence (weekdays→its set; daily/weekly_count→all 7 — the weekly-count
+  every-day set chosen with the user), but nothing in the notifications path writes to the DB or feeds
+  `computeStreak`/`isScheduledOn`. Same spirit as the display-only week-start rule.
+- **2026-07-23 (Phase 9)** — **Reminder time stored as minutes-past-midnight** (flat `reminderTime`
+  int, nullable; architecture §4), timezone-agnostic like the rest of the day math. `src/lib/time.ts`
+  converts to/from the `Date` the picker needs. Default **8:00 PM** (`DEFAULT_REMINDER_TIME`),
+  overridable in Settings (`reminderDefaultTime` pref); a **master switch** (`reminderMasterEnabled`
+  pref, default on) globally gates scheduling without clearing per-habit toggles.
+- **2026-07-23 (Phase 9)** — **Single reschedule entry point = `reconcileReminders()`** (data layer):
+  reads all habits, gates on the master switch, hands to `rescheduleAll` (cancel-all-then-schedule).
+  Called from `ReminderSync` (boot + `AppState` foreground), import, and the Settings master toggle.
+  Per-habit writes (`createHabit`/`updateHabit`) call `syncReminder` (cancel-this-habit-first) so
+  repeated edits never duplicate; archive/delete cancel. `ReminderSync`/`ReminderSettings` live outside
+  `src/app/` so Expo Router doesn't treat them as routes.
+- **2026-07-23 (Phase 9)** — **New `Toggle` + `TimePickerField` primitives.** `Toggle` wraps RN
+  `Switch` tinted with `useAccent()` (accent track, `select` haptic); `TimePickerField` shows a tonal
+  time pill opening the native picker (`DateTimePickerAndroid.open` imperative on Android; inline
+  `<DateTimePicker>` on iOS). Both used by the habit form and the Settings reminders section.
 
 ## Open questions / parking lot
 - [ ] Finalize the accent source color → regenerate M3 palette hex in ui-tokens §1.2

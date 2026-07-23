@@ -15,7 +15,7 @@ import { usePreferences, type ThemeMode, type WeekStart } from "@/store";
 import { space } from "@/theme";
 import { SegmentedControl, Text } from "@/ui/primitives";
 import { ColorPicker } from "@/ui/habit";
-import { SettingsRow, SettingsSection } from "@/ui/settings";
+import { ReminderSettings, SettingsRow, SettingsSection } from "@/ui/settings";
 
 const s = strings.settings;
 
@@ -140,6 +140,8 @@ export default function SettingsScreen() {
             }
           />
         </SettingsSection>
+
+        <ReminderSettings />
 
         <SettingsSection title={s.dataSection} footer={s.dataDescription}>
           <SettingsRow

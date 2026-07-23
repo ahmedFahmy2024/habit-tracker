@@ -9,14 +9,22 @@
  * Kept out of `src/app/**` so route files stay thin (docs/architecture.md §3). Both the add and
  * edit screens render this same component.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { Cadence } from "@/domain";
-import { strings } from "@/lib";
+import { getPermissionState, strings, type PermissionState } from "@/lib";
+import { usePreferences } from "@/store";
 import { space, type HabitColorKey } from "@/theme";
-import { Button, Text, TextField, type IconName } from "@/ui/primitives";
+import {
+  Button,
+  Text,
+  TextField,
+  TimePickerField,
+  Toggle,
+  type IconName,
+} from "@/ui/primitives";
 
 import { CadencePicker } from "./CadencePicker";
 import { ColorPicker } from "./ColorPicker";
@@ -27,6 +35,10 @@ export interface HabitFormValues {
   color: HabitColorKey;
   icon: IconName;
   cadence: Cadence;
+  /** Local reminder (Phase 9). */
+  reminderEnabled: boolean;
+  /** Minutes past midnight (0..1439), or null when the reminder is off. */
+  reminderTime: number | null;
 }
 
 export interface HabitFormProps {
@@ -44,6 +56,8 @@ export const NEW_HABIT_DEFAULTS: HabitFormValues = {
   color: "green",
   icon: "water",
   cadence: { type: "daily" },
+  reminderEnabled: false,
+  reminderTime: null,
 };
 
 export function HabitForm({ initial, submitLabel, onSubmit }: HabitFormProps) {
@@ -52,9 +66,29 @@ export function HabitForm({ initial, submitLabel, onSubmit }: HabitFormProps) {
   const [color, setColor] = useState<HabitColorKey>(initial.color);
   const [icon, setIcon] = useState<IconName>(initial.icon);
   const [cadence, setCadence] = useState<Cadence>(initial.cadence);
+  const [reminderEnabled, setReminderEnabled] = useState(initial.reminderEnabled);
+  // Keep a working time even while the reminder is off, so toggling on restores the last choice.
+  const defaultTime = usePreferences((s) => s.reminderDefaultTime);
+  const [reminderTime, setReminderTime] = useState<number>(
+    initial.reminderTime ?? defaultTime,
+  );
+  const [permission, setPermission] = useState<PermissionState>("granted");
   const [nameError, setNameError] = useState<string>();
   const [cadenceError, setCadenceError] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
+
+  // Reflect the current OS permission so a denied state is visible (no silent failure — Phase 9).
+  // Re-check when the reminder is switched on (the user may have changed it in OS settings).
+  useEffect(() => {
+    if (!reminderEnabled) return;
+    let active = true;
+    void getPermissionState().then((state) => {
+      if (active) setPermission(state);
+    });
+    return () => {
+      active = false;
+    };
+  }, [reminderEnabled]);
 
   /** Validate; returns the trimmed values on success, or null (and sets errors) on failure. */
   const validate = (): HabitFormValues | null => {
@@ -78,7 +112,17 @@ export function HabitForm({ initial, submitLabel, onSubmit }: HabitFormProps) {
       setCadenceError(undefined);
     }
 
-    return ok ? { name: trimmed, color, icon, cadence } : null;
+    return ok
+      ? {
+          name: trimmed,
+          color,
+          icon,
+          cadence,
+          reminderEnabled,
+          // Only persist a time when the reminder is on; off ⇒ null (schema invariant).
+          reminderTime: reminderEnabled ? reminderTime : null,
+        }
+      : null;
   };
 
   const handleSubmit = async () => {
@@ -133,6 +177,58 @@ export function HabitForm({ initial, submitLabel, onSubmit }: HabitFormProps) {
             if (cadenceError) setCadenceError(undefined);
           }}
         />
+      </Field>
+
+      <Field label={strings.reminders.formSectionLabel}>
+        <View className="flex-row items-center" style={{ gap: space[3] }}>
+          <View className="flex-1" style={{ gap: space[1] }}>
+            <Text variant="body.large" color="onSurface">
+              {strings.reminders.formToggleLabel}
+            </Text>
+            <Text variant="body.medium" color="onSurfaceVariant">
+              {strings.reminders.formToggleDescription}
+            </Text>
+          </View>
+          <Toggle
+            value={reminderEnabled}
+            onValueChange={setReminderEnabled}
+            accessibilityLabel={strings.reminders.a11yToggle}
+          />
+        </View>
+
+        {reminderEnabled ? (
+          <View
+            className="flex-row items-center justify-between"
+            style={{ marginTop: space[4] }}
+          >
+            <Text variant="body.large" color="onSurface">
+              {strings.reminders.formTimeLabel}
+            </Text>
+            <TimePickerField
+              value={reminderTime}
+              onChange={setReminderTime}
+              accessibilityLabel={strings.reminders.a11yTime}
+            />
+          </View>
+        ) : null}
+
+        {reminderEnabled && permission === "denied" ? (
+          <Text
+            variant="body.medium"
+            color="error"
+            style={{ marginTop: space[3] }}
+          >
+            {strings.reminders.formPermissionDenied}
+          </Text>
+        ) : reminderEnabled && permission === "unavailable" ? (
+          <Text
+            variant="body.medium"
+            color="onSurfaceVariant"
+            style={{ marginTop: space[3] }}
+          >
+            {strings.reminders.unavailableBody}
+          </Text>
+        ) : null}
       </Field>
 
       <Button

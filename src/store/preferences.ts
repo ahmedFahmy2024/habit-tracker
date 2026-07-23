@@ -17,6 +17,10 @@ import { create } from "zustand";
 
 import { expoDb } from "@/db/client";
 import { logger } from "@/lib";
+// Import the default DIRECTLY from the leaf module (not the `@/lib` barrel) so the store's
+// synchronous boot-time hydration doesn't drag in the notifications side-effect module. Mirrors the
+// `habitColors` direct-import rationale below.
+import { DEFAULT_REMINDER_TIME } from "@/lib/time";
 // Import directly from the specific module (not the `@/theme` barrel) to avoid a require cycle:
 // the barrel re-exports `ThemeSync`, which imports this store. `habitColors` has no such back-edge.
 import { HABIT_COLOR_KEYS, type HabitColorKey } from "@/theme/habitColors";
@@ -30,6 +34,13 @@ export interface Preferences {
   themeMode: ThemeMode;
   accentKey: HabitColorKey;
   weekStart: WeekStart;
+  /**
+   * Reminders master switch (Phase 9). When off, no habit reminder is scheduled regardless of a
+   * habit's own toggle — a quick global mute. Display/scheduling only; never touches streaks.
+   */
+  reminderMasterEnabled: boolean;
+  /** Default reminder time (minutes past midnight) pre-filled when enabling a habit's reminder. */
+  reminderDefaultTime: number;
 }
 
 /** The at-install defaults (used before anything is persisted, or if a value is corrupt). */
@@ -37,6 +48,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   themeMode: "system",
   accentKey: "green",
   weekStart: 0,
+  reminderMasterEnabled: true,
+  reminderDefaultTime: DEFAULT_REMINDER_TIME,
 };
 
 /** The single row key under which the preferences object is JSON-stored in `key_value`. */
@@ -80,6 +93,13 @@ function readPreferences(): Preferences {
       weekStart: isWeekStart(parsed.weekStart)
         ? parsed.weekStart
         : DEFAULT_PREFERENCES.weekStart,
+      reminderMasterEnabled:
+        typeof parsed.reminderMasterEnabled === "boolean"
+          ? parsed.reminderMasterEnabled
+          : DEFAULT_PREFERENCES.reminderMasterEnabled,
+      reminderDefaultTime: isReminderTime(parsed.reminderDefaultTime)
+        ? parsed.reminderDefaultTime
+        : DEFAULT_PREFERENCES.reminderDefaultTime,
     };
   } catch (error) {
     logger.error("readPreferences: corrupt prefs JSON, using defaults", { error });
@@ -112,6 +132,9 @@ function isWeekStart(v: unknown): v is WeekStart {
 function isAccentKey(v: unknown): v is HabitColorKey {
   return typeof v === "string" && (HABIT_COLOR_KEYS as readonly string[]).includes(v);
 }
+function isReminderTime(v: unknown): v is number {
+  return typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 1439;
+}
 
 /* ------------------------------------------------------------------ store */
 
@@ -119,6 +142,8 @@ interface PreferencesState extends Preferences {
   setThemeMode: (mode: ThemeMode) => void;
   setAccentKey: (key: HabitColorKey) => void;
   setWeekStart: (weekStart: WeekStart) => void;
+  setReminderMasterEnabled: (enabled: boolean) => void;
+  setReminderDefaultTime: (minutesPastMidnight: number) => void;
   /**
    * Re-read from the DB. Call once after migrations succeed, in case this module loaded (and
    * hydrated to defaults) before the `key_value` table existed on a fresh install.
@@ -141,6 +166,14 @@ export const usePreferences = create<PreferencesState>((set, get) => ({
     set({ weekStart });
     writePreferences({ ...get(), weekStart });
   },
+  setReminderMasterEnabled: (reminderMasterEnabled) => {
+    set({ reminderMasterEnabled });
+    writePreferences({ ...get(), reminderMasterEnabled });
+  },
+  setReminderDefaultTime: (reminderDefaultTime) => {
+    set({ reminderDefaultTime });
+    writePreferences({ ...get(), reminderDefaultTime });
+  },
 
   hydrate: () => {
     const prefs = readPreferences();
@@ -150,7 +183,9 @@ export const usePreferences = create<PreferencesState>((set, get) => ({
     if (
       prefs.themeMode !== cur.themeMode ||
       prefs.accentKey !== cur.accentKey ||
-      prefs.weekStart !== cur.weekStart
+      prefs.weekStart !== cur.weekStart ||
+      prefs.reminderMasterEnabled !== cur.reminderMasterEnabled ||
+      prefs.reminderDefaultTime !== cur.reminderDefaultTime
     ) {
       set(prefs);
     }

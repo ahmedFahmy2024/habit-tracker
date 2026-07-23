@@ -241,6 +241,59 @@ export const strings = {
     summaryEveryday: "Every day",
     summaryWeekends: "Weekends",
   },
+  /** Local reminders (build-plan Phase 9) — notification copy + form/settings controls. */
+  reminders: {
+    // --- Notification content (what the OS shows) ---
+    /** Android channel name shown in the OS notification settings. */
+    channelName: "Reminders",
+    /** Body of a per-habit reminder; the title is the habit's name. */
+    body: "Still unchecked today — a quick tap keeps your streak.",
+    /** One-shot test reminder (on-device verification only). */
+    testTitle: "Happit reminder",
+    testBody: "This is a test reminder. Your reminders are working.",
+
+    // --- Habit form: reminder section ---
+    formSectionLabel: "Reminder",
+    formToggleLabel: "Remind me",
+    formToggleDescription: "A local nudge on scheduled days while it's still unchecked.",
+    formTimeLabel: "Time",
+    /** Shown under the toggle when the OS permission is denied (build-plan Phase 9). */
+    formPermissionDenied:
+      "Notifications are turned off for Happit. Enable them in Settings to get reminders.",
+
+    // --- Settings: Reminders section ---
+    settingsSection: "Reminders",
+    settingsDescription:
+      "Per-habit reminders are set on each habit. These control the default time and the OS permission.",
+    masterEnableLabel: "Allow reminders",
+    masterEnableDescription: "Master switch for all habit reminders.",
+    defaultTimeLabel: "Default time",
+    defaultTimeDescription: "Pre-filled when you turn on a habit's reminder.",
+    permissionLabel: "Notification permission",
+    permissionGranted: "Allowed",
+    permissionDenied: "Blocked — enable in system settings",
+    permissionUndetermined: "Not requested yet",
+    permissionUnavailable: "Unavailable in Expo Go",
+    /** Shown when running in Expo Go, where expo-notifications is stubbed (SDK 53+). */
+    unavailableBody:
+      "Reminders need a development build — they don't run in Expo Go. Everything else works here.",
+    permissionRequestAction: "Request permission",
+    permissionOpenSettingsAction: "Open settings",
+    /** Explains the OS-off state so there's no silent failure (build-plan Phase 9). */
+    osOffBody:
+      "Reminders are blocked at the system level. Open Settings to allow notifications for Happit.",
+    testAction: "Send a test reminder",
+    testScheduledTitle: "Test reminder scheduled",
+    testScheduledBody: "It should arrive in about 10 seconds.",
+    testFailedTitle: "Couldn't schedule the test",
+    testFailedBody: "Notifications may be turned off for Happit.",
+
+    // --- A11y ---
+    a11yToggle: "Enable reminder for this habit",
+    a11yTime: "Reminder time",
+    a11yMasterEnable: "Allow reminders",
+    a11yDefaultTime: "Default reminder time",
+  },
   /** Migration gate — the loading/error screens shown at boot (docs/architecture.md §8). */
   migration: {
     loadingTitle: "Setting things up",

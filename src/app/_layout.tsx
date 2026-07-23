@@ -4,6 +4,8 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
+import { ReminderSync } from "@/data/ReminderSync";
+import { WidgetSync } from "@/data/WidgetSync";
 import { MigrationGate } from "@/db/MigrationGate";
 import { strings } from "@/lib";
 import { ThemeSync } from "@/theme";
@@ -22,6 +24,8 @@ export default function RootLayout() {
       <StatusBar style="auto" />
       <MigrationGate>
         <ThemeSync />
+        <ReminderSync />
+        <WidgetSync />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen

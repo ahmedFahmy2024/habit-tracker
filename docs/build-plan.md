@@ -174,13 +174,85 @@ demonstrably met on a real device.
 
 ---
 
+## Phase 9 — Local reminders (notifications)
+
+**Goal:** an opt-in **local** notification nudges the user on a habit's scheduled days while
+it's still unchecked — no push server, no account, works in airplane mode.
+
+> Uses `expo-notifications` (SDK 57). Read its real API from opensrc/Context7 before wiring:
+> `setNotificationHandler` (new `shouldShowBanner`/`shouldShowList` fields),
+> `requestPermissionsAsync`, `scheduleNotificationAsync` with
+> `SchedulableTriggerInputTypes.CALENDAR` (weekday+time), `cancelScheduledNotificationAsync`,
+> and an Android channel via `setNotificationChannelAsync`. See
+> [library-docs.md](./library-docs.md) §13.
+
+Tasks:
+- [ ] Add `expo-notifications`; config-plugin entry + Android channel in `app.json`.
+- [ ] `src/lib/notifications.ts` wrapper: `ensurePermission()`, `scheduleHabitReminder(habit)`,
+      `cancelHabitReminder(habitId)`, `rescheduleAll()`. Never call `expo-notifications`
+      directly from components (mirror the `haptics.ts` pattern).
+- [ ] Schema: add `reminderTime` (minutes-past-midnight, nullable) + `reminderEnabled` to the
+      habit table; migration ([architecture.md](./architecture.md) §4). Keep it flat.
+- [ ] One local notification **per scheduled weekday** (CALENDAR trigger) derived from the
+      habit's cadence via `isScheduledOn`; N-times-per-week cadence uses the default reminder
+      day set. Reminder scheduling reads the cadence but **never** feeds back into streaks
+      (streaks stay purely check-in-derived — see [[happit-week-start-display-only]] rule spirit).
+- [ ] Add/edit-habit form: time picker + enable toggle → schedule/cancel on save.
+- [ ] Settings: global "Reminders" section (default time, master enable, re-request permission).
+- [ ] Reschedule on: habit create/edit/archive/delete, cadence change, and app foreground
+      (guard against duplicate/stale scheduled ids by cancelling this habit's ids first).
+- [ ] Permission-denied and OS-off states surfaced in Settings (no silent failure).
+
+**Done when:** enabling a reminder schedules an OS notification that fires at the chosen time
+on a scheduled day; disabling/archiving/deleting cancels it; changing cadence reschedules;
+denying permission shows a clear Settings state; no duplicate notifications after repeated
+edits. Verified on the Pixel_10 emulator (a scheduled short-interval test notification fires).
+
+---
+
+## Phase 10 — Home-screen widget (live)
+
+**Goal:** a native home-screen widget shows **today's completion ring + top streak**,
+refreshed from the same local data — glanceable without opening the app.
+
+> This is a **native target**, not a JS screen. It needs a **dev/EAS build** — it can **not**
+> be exercised in Expo Go. iOS = WidgetKit (SwiftUI); Android = Glance/RemoteViews. Read
+> [library-docs.md](./library-docs.md) §14 for the config-plugin + shared-data approach
+> before writing native code; verify the plugin's real API from source.
+
+Tasks:
+- [ ] Choose + pin the widget config-plugin/native-target approach; record it in
+      [library-docs.md](./library-docs.md) §14 with the resolved version and verified setup.
+- [ ] Shared data channel: write a small today-summary snapshot (date, done/total, top streak,
+      accent) to App Group (iOS) / SharedPreferences (Android) whenever check-ins change.
+- [ ] `src/lib/widget.ts` wrapper: `publishTodaySnapshot()` called from the check-in write
+      path + on foreground; debounced.
+- [ ] iOS WidgetKit target: small + medium widgets rendering the ring + top streak, M3-ish
+      tint from the stored accent.
+- [ ] Android Glance/RemoteViews provider rendering the same.
+- [ ] Widget tap deep-links into Today (`exp+happit://today` / typed route).
+- [ ] Timeline/refresh policy: update on data write and at day rollover; no network.
+
+**Done when:** on a **dev build**, adding the widget shows the current day's ring + top streak;
+checking a habit in-app updates the widget within its refresh policy; tapping it opens Today;
+day rollover resets the ring. iOS unverified if no macOS host — note that in the handoff;
+Android verified on device.
+
+---
+
 ## Dependencies between phases
 
 ```
-0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
+0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
         └─ domain tests in 2 unblock correct streaks in 5 & 6
 1 (primitives) unblocks 4,5,6,7 UI
+9 (reminders)  needs habit CRUD (4) + cadence/isScheduledOn (2)
+10 (widget)    needs today-summary + streaks (5,6) and a dev build (NOT Expo Go)
 ```
 
 Do not start a phase until its predecessor's "done when" is genuinely met — half-built
 foundations are where the slop creeps in.
+
+> Phases 9 & 10 are **additive feature phases** layered on the finished v1 core (0–8). They
+> may be built in either order, but each still obeys its own "done-when". Phase 10 is the one
+> phase that cannot be verified through Expo Go — plan for a dev/EAS build.

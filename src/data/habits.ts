@@ -10,7 +10,15 @@ import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { db } from "@/db/client";
 import { habits, type Habit, type NewHabit } from "@/db/schema";
 import type { Cadence, Weekday } from "@/domain";
-import { logger, newId } from "@/lib";
+import {
+  cancelHabitReminder,
+  logger,
+  newId,
+  rescheduleAll,
+  scheduleHabitReminder,
+  type ReminderHabit,
+} from "@/lib";
+import { remindersEnabled } from "@/store";
 
 /** Live list of active (non-archived) habits, in user sort order. */
 export function useHabits() {
@@ -45,6 +53,22 @@ export function cadenceOf(habit: Habit): Cadence {
         weeklyTarget: habit.weeklyTarget ?? 1,
       };
   }
+}
+
+/**
+ * Map a habit row → the normalized `ReminderHabit` the notifications lib needs (cadence union +
+ * reminder fields). Keeps `src/lib/notifications.ts` decoupled from the Drizzle row shape, exactly
+ * like `cadenceOf` keeps the domain decoupled.
+ */
+export function reminderHabitOf(habit: Habit): ReminderHabit {
+  return {
+    id: habit.id,
+    name: habit.name,
+    cadence: cadenceOf(habit),
+    reminderEnabled: habit.reminderEnabled,
+    reminderTime: habit.reminderTime,
+    archivedAt: habit.archivedAt,
+  };
 }
 
 /** Parse the CSV '1,3,5' weekday column into a typed, de-duplicated weekday list. */
@@ -85,11 +109,20 @@ export interface CreateHabitInput {
   color: string; // token key, e.g. 'green' (NOT a hex)
   icon: string; // icon-set name
   cadence: Cadence;
+  /** Local reminder (Phase 9). */
+  reminderEnabled: boolean;
+  /** Minutes past midnight (0..1439), or null when the reminder is off. */
+  reminderTime: number | null;
   /** Sort position; defaults to append-at-end when omitted by the caller. */
   sortOrder?: number;
 }
 
-/** Create a new habit. Returns the generated id. Defaults to append-at-end sort order. */
+/**
+ * Create a new habit. Returns the generated id. Defaults to append-at-end sort order. Schedules
+ * the OS reminder if one was enabled — the DB write is the source of truth; scheduling is a
+ * side-effect that reads the (just-written) habit but never writes back (streaks stay
+ * check-in-derived, build-plan Phase 9).
+ */
 export async function createHabit(input: CreateHabitInput): Promise<string> {
   try {
     const id = newId();
@@ -98,9 +131,12 @@ export async function createHabit(input: CreateHabitInput): Promise<string> {
       name: input.name,
       color: input.color,
       icon: input.icon,
+      reminderEnabled: input.reminderEnabled,
+      reminderTime: input.reminderTime,
       sortOrder: input.sortOrder ?? (await nextSortOrder()),
       ...cadenceColumns(input.cadence),
     });
+    await syncReminder(id);
     return id;
   } catch (error) {
     logger.error("createHabit failed", { input, error });
@@ -114,11 +150,17 @@ export interface UpdateHabitInput {
   color: string; // token key, e.g. 'green' (NOT a hex)
   icon: string; // icon-set name
   cadence: Cadence;
+  /** Local reminder (Phase 9). */
+  reminderEnabled: boolean;
+  /** Minutes past midnight (0..1439), or null when the reminder is off. */
+  reminderTime: number | null;
 }
 
 /**
- * Update an existing habit's editable fields (name, color, icon, cadence). Reorder and
+ * Update an existing habit's editable fields (name, color, icon, cadence, reminder). Reorder and
  * archive have their own intention-named writers so this never touches `sortOrder`/`archivedAt`.
+ * Reschedules the OS reminder after the write (cancel-then-schedule inside `syncReminder` ⇒ a
+ * cadence/time/enabled change reschedules with no duplicates — build-plan Phase 9).
  */
 export async function updateHabit(
   id: string,
@@ -131,12 +173,57 @@ export async function updateHabit(
         name: input.name,
         color: input.color,
         icon: input.icon,
+        reminderEnabled: input.reminderEnabled,
+        reminderTime: input.reminderTime,
         ...cadenceColumns(input.cadence),
       })
       .where(eq(habits.id, id));
+    await syncReminder(id);
   } catch (error) {
     logger.error("updateHabit failed", { id, input, error });
     throw error;
+  }
+}
+
+/**
+ * (Re)schedule a single habit's reminder from its current DB state. Reads the row back so it
+ * always reflects exactly what was persisted, then hands the normalized view to the notifications
+ * lib (which cancels this habit's existing ids first → no duplicates). A no-op DB read failure
+ * or a disabled/archived habit results in the reminder being cancelled, never left stale.
+ */
+async function syncReminder(id: string): Promise<void> {
+  // Master switch off ⇒ never schedule (the habit's own toggle is preserved for when it's back on).
+  if (!remindersEnabled()) {
+    await cancelHabitReminder(id);
+    return;
+  }
+  const rows = await db.select().from(habits).where(eq(habits.id, id));
+  const habit = rows[0];
+  if (!habit) {
+    await cancelHabitReminder(id);
+    return;
+  }
+  await scheduleHabitReminder(reminderHabitOf(habit));
+}
+
+/**
+ * Reconcile EVERY habit's reminder against the OS in one pass — the single reschedule entry point
+ * for bulk/ambient triggers: app foreground, an import, and the Settings master-switch toggle
+ * (build-plan Phase 9). Reads all habits fresh, gates on the master switch (off ⇒ cancel-all), and
+ * hands the normalized views to `rescheduleAll` (which cancels-all then reschedules → no
+ * duplicates). Never throws (delegates swallow errors) so a caller can fire-and-forget.
+ */
+export async function reconcileReminders(): Promise<void> {
+  try {
+    if (!remindersEnabled()) {
+      // Master off: clear the slate. `rescheduleAll([])` cancels all and schedules nothing.
+      await rescheduleAll([]);
+      return;
+    }
+    const rows = await db.select().from(habits);
+    await rescheduleAll(rows.map(reminderHabitOf));
+  } catch (error) {
+    logger.error("reconcileReminders failed", { error });
   }
 }
 
@@ -167,13 +254,18 @@ async function nextSortOrder(): Promise<number> {
   return (rows[0]?.maxOrder ?? -1) + 1;
 }
 
-/** Soft-archive a habit (keeps its history; hidden from active lists). */
+/**
+ * Soft-archive a habit (keeps its history; hidden from active lists). Cancels any scheduled
+ * reminder — an archived habit must never nudge (build-plan Phase 9). The reminder columns are
+ * left intact so unarchiving (a future feature) could restore it.
+ */
 export async function archiveHabit(id: string): Promise<void> {
   try {
     await db
       .update(habits)
       .set({ archivedAt: new Date().toISOString() })
       .where(eq(habits.id, id));
+    await cancelHabitReminder(id);
   } catch (error) {
     logger.error("archiveHabit failed", { id, error });
     throw error;
@@ -189,6 +281,8 @@ export async function archiveHabit(id: string): Promise<void> {
  */
 export async function deleteHabit(id: string): Promise<void> {
   try {
+    // Cancel first so a scheduled reminder can't fire for a habit that no longer exists.
+    await cancelHabitReminder(id);
     await db.delete(habits).where(eq(habits.id, id));
   } catch (error) {
     logger.error("deleteHabit failed", { id, error });

@@ -72,6 +72,9 @@
 | `expo-file-system` | 57.0.1 | Write/read the export JSON file (new `File`/`Paths` API) | ✅ installed (Phase 7) — see §12 |
 | `expo-sharing` | 57.0.7 | OS share sheet to deliver the export file | ✅ installed (Phase 7) — see §12 |
 | `expo-document-picker` | 57.0.1 | Pick a backup JSON file to import | ✅ installed (Phase 7) — see §12 |
+| `expo-notifications` | 57.0.7 | Local reminders (scheduled, no push server) | ✅ installed (Phase 9) — see §13 |
+| `@react-native-community/datetimepicker` | 9.1.0 | Native time picker for the reminder time | ✅ installed (Phase 9) — see §13 |
+| `react-native-android-widget` | 0.21.0 | Native **Android** home-screen widget (config plugin + JS-rendered RemoteViews) | ✅ installed (Phase 10) — see §14. iOS WidgetKit deferred. |
 
 Install commands used (for reference):
 ```bash
@@ -422,6 +425,168 @@ functions are the deprecated *legacy* subpath; the current API is class-based):
 Config plugin `expo-sharing` was auto-added to `app.json` by `expo install`. No other config
 needed; all three autolink under Expo. The export/import layer lives in `src/data/backup.ts`
 (thin wrappers; the Settings route stays thin per architecture §3).
+
+## 13. Local reminders (Phase 9): expo-notifications ✅
+
+Installed with `bunx expo install expo-notifications @react-native-community/datetimepicker`
+→ **`expo-notifications@57.0.7`** + **`@react-native-community/datetimepicker@9.1.0`**. APIs
+verified against the **installed** `node_modules`/opensrc source before wiring. Wrapped in
+`src/lib/notifications.ts` — components/screens never import `expo-notifications` directly
+(mirrors `src/lib/haptics.ts`). No push token, no `getExpoPushTokenAsync`, no `projectId`:
+reminders are **local only** and work in airplane mode.
+
+> ### ⚠️ Two corrections to the original plan (verified on-device SDK 57)
+>
+> **(1) Trigger = WEEKLY, not CALENDAR.** The CALENDAR trigger sketched below is **iOS-only**:
+> the installed Android source (`android/.../scheduling/NotificationScheduler.kt::triggerFromParams`)
+> has `else -> throw InvalidArgumentException("Trigger of type: calendar is not supported on
+> Android")`. Use **`SchedulableTriggerInputTypes.WEEKLY`** (`{ type, weekday, hour, minute,
+> channelId }`), which Android maps via `Calendar.DAY_OF_WEEK`. **Weekday is 1=Sun…7=Sat**
+> (`Calendar.SUNDAY == 1`; also documented on `WeeklyTriggerInput`), so convert our domain Weekday
+> (0=Sun..6=Sat) with **`weekday + 1`**. Schedule one WEEKLY notification per scheduled weekday.
+>
+> **(2) Not usable in Expo Go — needs a dev build.** In SDK 53+ expo-notifications was removed from
+> Expo Go: on Android its `TokenEmitter` calls `warnOfExpoGoPushUsage()` at **module scope**, which
+> `throw`s, so `import * as Notifications from "expo-notifications"` **red-boxes the whole app in Expo
+> Go**. `@react-native-community/datetimepicker` similarly does `TurboModuleRegistry.getEnforcing` at
+> module scope (its native module isn't in the Expo Go binary). **Both are therefore lazy-loaded via
+> `require()` behind `isRunningInExpoGo()` from `expo`** (`getNotifications()` / `getPicker()`), so the
+> app runs fully in Expo Go with reminders inert and a clear "Unavailable in Expo Go" state. Verify
+> actual firing/cancel/reschedule in a **dev build**.
+
+Key surface (SDK 57), verified from the installed source:
+
+- **Handler (module scope, once):** the modern fields are `shouldShowBanner` +
+  `shouldShowList` (the old `shouldShowAlert` is deprecated). Handler must resolve within 3s.
+  ```ts
+  import * as Notifications from 'expo-notifications';
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    }),
+  });
+  ```
+- **Permissions:** `getPermissionsAsync()` → if not granted, `requestPermissionsAsync({ ios: {
+  allowAlert: true, allowBadge: true, allowSound: true } })`. Surface a denied state in Settings.
+- **Android channel** (required for the prompt + delivery):
+  `Notifications.setNotificationChannelAsync('reminders', { name: 'Reminders',
+  importance: Notifications.AndroidImportance.DEFAULT })`.
+- **Schedule a repeating weekday reminder** — one **WEEKLY** trigger per scheduled weekday:
+  ```ts
+  await N.scheduleNotificationAsync({
+    content: { title: habit.name, body: 'Still unchecked today…', data: { habitId } },
+    trigger: {
+      type: N.SchedulableTriggerInputTypes.WEEKLY,
+      weekday: domainWeekday + 1,   // 0=Sun..6=Sat → 1=Sun..7=Sat (Android Calendar.DAY_OF_WEEK)
+      hour, minute,
+      channelId: 'reminders',
+    },
+  });
+  ```
+  (`SchedulableTriggerInputTypes` also has `DAILY`, `CALENDAR` (iOS-only), `MONTHLY`, `YEARLY`,
+  `TIME_INTERVAL`, `DATE`. `TIME_INTERVAL` powers the short-delay **test reminder**
+  `scheduleTestReminder(seconds)`.)
+- **Cancel:** we stamp `data.habitId` on each scheduled notification, then
+  `getAllScheduledNotificationsAsync()` → filter by `habitId` → `cancelScheduledNotificationAsync(id)`.
+  A reschedule always cancels this habit's ids first (or `cancelAllScheduledNotificationsAsync()` for a
+  full reconcile) ⇒ no duplicates.
+- **Time picker:** `@react-native-community/datetimepicker@9.1.0` — Android via the imperative
+  `DateTimePickerAndroid.open({ mode:'time', ... })`, iOS via an inline `<DateTimePicker mode="time">`.
+  Wrapped in `TimePickerField` (lazy-loaded — see the Expo Go note above). Reminder time is stored as
+  minutes-past-midnight; `src/lib/time.ts` converts to/from a `Date`.
+
+Config: `expo-notifications` plugin added to `app.json` (Android tint `#386a20`). The `reminders`
+Android channel is created at **runtime** via `setNotificationChannelAsync` (the plugin's
+`defaultChannel` only names an FCM default — it doesn't create custom channels).
+
+## 14. Home-screen widget (Phase 10): `react-native-android-widget` ✅ (Android)
+
+The widget is a **native OS target**, not a React screen, so it **cannot run in Expo Go — it
+requires a dev/EAS build**. **Pinned (Phase 10, chosen with the user):
+`react-native-android-widget@0.21.0`** for **Android**; **iOS WidgetKit is deferred** (needs a
+macOS host this Windows box doesn't have — see the Phase 10 handoff). APIs below were verified
+against the installed `0.21.0` source before wiring (AGENTS opensrc-first rule), NOT training recall.
+
+**Why this library:** it's the mature, actively-maintained Expo-config-plugin Android widget lib,
+and — critically — the widget UI is written in **React** (`FlexWidget`/`TextWidget`/`SvgWidget`/
+`OverlapWidget`) and rendered to RemoteViews, so we reuse our `ProgressRing` geometry as an inline
+SVG string instead of writing Kotlin drawing code. Its `package.json` devDeps target RN 0.83, but
+its peer range is `react-native: "*"` + `expo: ">=54.0.0"` and it autolinks under Expo.
+
+### Verified setup (from installed source + the lib's Expo-Router docs)
+
+**Config plugin (`app.json`)** — one resizable "Today" widget (JSON-serializable, so no
+`app.config.ts` needed):
+```jsonc
+["react-native-android-widget", {
+  "widgets": [{
+    "name": "Today",                 // MUST match TODAY_WIDGET_NAME in src/lib/widget.ts
+    "label": "Happit — Today",
+    "minWidth": "180dp", "minHeight": "110dp",
+    "targetCellWidth": 2, "targetCellHeight": 1,
+    "maxResizeWidth": "360dp", "maxResizeHeight": "180dp",
+    "resizeMode": "horizontal|vertical"  // one resizable widget spans small→medium
+  }]
+}]
+```
+
+**Entry (`index.ts` + `package.json` `main`)** — the canonical Expo-Router wiring (verified from
+`docs/tutorial/register-task-handler.md`): point `main` at a custom `index.ts` that imports the
+router entry for side-effects, then registers the widget's **headless** task handler:
+```ts
+// package.json:  "main": "index.ts"   (was "expo-router/entry")
+// index.ts:
+import "expo-router/entry";
+import { registerWidgetTaskHandler } from "react-native-android-widget";
+import { widgetTaskHandler } from "@/widget/widgetTaskHandler";
+registerWidgetTaskHandler(widgetTaskHandler);
+```
+
+**Key API surface (verified 0.21.0):**
+- `registerWidgetTaskHandler(handler)` — registers a headless task (`AppRegistry.registerHeadlessTask`).
+  The handler gets `{ widgetInfo, widgetAction, clickAction, clickActionData, renderWidget }`;
+  `widgetAction ∈ WIDGET_ADDED | WIDGET_UPDATE | WIDGET_RESIZED | WIDGET_DELETED | WIDGET_CLICK`.
+- `requestWidgetUpdate({ widgetName, renderWidget, widgetNotFound })` — redraws every placed instance
+  of `widgetName`; `renderWidget(info) => JSX | { light, dark }`. This is our refresh trigger.
+- **Widgets:** `FlexWidget` (LinearLayout), `OverlapWidget` (FrameLayout — for stacking the count
+  over the ring), `TextWidget`, `SvgWidget` (`svg` accepts an SVG **string**). Styling is a flexbox
+  subset (see `src/widgets/utils/style.props.ts`); `TextWidget.textAlign` lives in `style`, not as a
+  top-level prop.
+- **Tap = deep link:** `clickAction: "OPEN_URI"`, `clickActionData: { uri: "happit://today" }` (scheme
+  `happit` in app.json). `OPEN_URI` is handled natively (does NOT route through `WIDGET_CLICK`).
+- **SVG native renderer:** `com.caverock:androidsvg-aar:1.4` — supports `stroke-dasharray`,
+  `stroke-dashoffset`, and `transform="rotate(...)"`, so our ring string renders as a true stroke arc.
+
+### Shared data channel + our wrapper
+
+The widget task runs **headless** (no React tree, no `useLiveQuery`, no theme hooks), so it can't
+re-derive today's summary — it reads a **frozen snapshot**. We store that snapshot in the SAME
+`key_value` table in `happit.db` (created by migration 0001) that backs preferences, via
+**synchronous** expo-sqlite — both the app and the widget's headless JS task share the process/DB, so
+no App Group / SharedPreferences plumbing is needed for the Android path. (iOS WidgetKit, deferred,
+WILL need an App Group.)
+
+- `src/data/widgetSnapshot.ts` — `WidgetSnapshot` (version, date, done/total, top streak + unit +
+  name, resolved accent hex); `computeTodaySnapshot` (freezes the numbers `useTodayHabits` already
+  derived — the widget NEVER re-derives streaks), `writeSnapshot`/`readSnapshot` (sync, defensive).
+- `src/lib/widget.ts` — the ONE place the native module is touched (mirrors `notifications.ts`):
+  `publishTodaySnapshot()` (debounced `requestWidgetUpdate`), Android-only, lazy-`require`d behind a
+  `Platform.OS === "android"` + try/catch guard → a **no-op** off-Android and in Expo Go.
+- `src/data/WidgetSync.tsx` — a null-render sync (sibling of `ReminderSync`) that subscribes to
+  `useTodayHabits`, writes the snapshot, and publishes on every check-in (live-query re-run) + on app
+  foreground. Reuses the check-in write path reactively instead of coupling `toggleCheckin` to the lib.
+- `src/widget/` — `ring.ts` (SVG string, mirrors `ProgressRing` geometry), `TodayWidget.tsx`
+  (`renderTodayWidget()` → `{ light, dark }`, applies **day-rollover** reset when the snapshot's date
+  ≠ today), `widgetTaskHandler.tsx` (headless handler).
+- Deep-link route `src/app/today.tsx` → `<Redirect href="/">` (Today tab).
+
+> **iOS is unverified** on this Windows box (no macOS). iOS WidgetKit (a targets plugin such as
+> `@bacons/apple-targets` + a SwiftUI extension + an App Group) is **deferred**; `src/lib/widget.ts`
+> is platform-guarded so it drops in later without touching callers. Android was verified on the
+> Pixel_10 dev build — see the Phase 10 handoff.
 
 ## 9. Versions / upgrade policy
 

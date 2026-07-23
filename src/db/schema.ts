@@ -27,6 +27,13 @@ export const habits = sqliteTable("habits", {
   }).notNull(),
   weekdays: text("weekdays"), // CSV '1,3,5' (0=Sun..6=Sat) — only for 'weekdays'
   weeklyTarget: integer("weekly_target"), // N — only for 'weekly_count'
+  // Local reminder (Phase 9). Kept FLAT alongside cadence (architecture.md §4). Reminders are a
+  // NUDGE only — they read the cadence to pick which weekdays to fire on, but never feed back
+  // into scheduling or streaks (streaks stay purely check-in-derived; see src/lib/notifications.ts).
+  reminderEnabled: integer("reminder_enabled", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  reminderTime: integer("reminder_time"), // minutes past local midnight (0..1439), null when off
   sortOrder: integer("sort_order").notNull().default(0),
   archivedAt: text("archived_at"), // ISO ts or null
   createdAt: text("created_at")
