@@ -4,7 +4,7 @@
  * flat cadence columns (§4) onto the domain's normalized `Cadence` union (§7), so the domain
  * never sees the DB shape.
  */
-import { asc, eq, isNull } from "drizzle-orm";
+import { asc, eq, isNull, max } from "drizzle-orm";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 
 import { db } from "@/db/client";
@@ -89,7 +89,7 @@ export interface CreateHabitInput {
   sortOrder?: number;
 }
 
-/** Create a new habit. Returns the generated id. */
+/** Create a new habit. Returns the generated id. Defaults to append-at-end sort order. */
 export async function createHabit(input: CreateHabitInput): Promise<string> {
   try {
     const id = newId();
@@ -98,7 +98,7 @@ export async function createHabit(input: CreateHabitInput): Promise<string> {
       name: input.name,
       color: input.color,
       icon: input.icon,
-      sortOrder: input.sortOrder ?? 0,
+      sortOrder: input.sortOrder ?? (await nextSortOrder()),
       ...cadenceColumns(input.cadence),
     });
     return id;
@@ -106,6 +106,65 @@ export async function createHabit(input: CreateHabitInput): Promise<string> {
     logger.error("createHabit failed", { input, error });
     throw error;
   }
+}
+
+/** Fields an edit can change. `sortOrder`/`archivedAt` are managed by their own writers. */
+export interface UpdateHabitInput {
+  name: string;
+  color: string; // token key, e.g. 'green' (NOT a hex)
+  icon: string; // icon-set name
+  cadence: Cadence;
+}
+
+/**
+ * Update an existing habit's editable fields (name, color, icon, cadence). Reorder and
+ * archive have their own intention-named writers so this never touches `sortOrder`/`archivedAt`.
+ */
+export async function updateHabit(
+  id: string,
+  input: UpdateHabitInput,
+): Promise<void> {
+  try {
+    await db
+      .update(habits)
+      .set({
+        name: input.name,
+        color: input.color,
+        icon: input.icon,
+        ...cadenceColumns(input.cadence),
+      })
+      .where(eq(habits.id, id));
+  } catch (error) {
+    logger.error("updateHabit failed", { id, input, error });
+    throw error;
+  }
+}
+
+/**
+ * Persist a new ordering. `ids` is the full active list in the user's chosen order; each
+ * habit's `sortOrder` is set to its index so `useHabits` (ordered by `sortOrder`) reflects it.
+ * The expo-sqlite driver runs synchronously, so we issue the row updates in sequence.
+ */
+export async function reorderHabits(ids: string[]): Promise<void> {
+  try {
+    for (let i = 0; i < ids.length; i++) {
+      await db
+        .update(habits)
+        .set({ sortOrder: i })
+        .where(eq(habits.id, ids[i]));
+    }
+  } catch (error) {
+    logger.error("reorderHabits failed", { ids, error });
+    throw error;
+  }
+}
+
+/** Next append position: one past the current max `sortOrder` (0 when there are no habits). */
+async function nextSortOrder(): Promise<number> {
+  const rows = await db
+    .select({ maxOrder: max(habits.sortOrder) })
+    .from(habits);
+  return (rows[0]?.maxOrder ?? -1) + 1;
 }
 
 /** Soft-archive a habit (keeps its history; hidden from active lists). */

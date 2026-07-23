@@ -9,7 +9,7 @@
 Per-phase handoff records: [handoffs/](./handoffs/) (written at the end of each phase — see
 [../AGENTS.md](../AGENTS.md) § Phase handoffs).
 
-Last updated: _2026-07-23 — Phase 3 complete: navigation shell. Native bottom tabs (Today/Habits/Settings) re-verified against installed expo-router 57.0.8; empty tab screens rebuilt on the Phase-1 `EmptyState`/`FAB`/`Button` primitives; `habit/[id]` push + `habit/new` modal wired and reachable; root provider order confirmed (GestureHandlerRoot → StatusBar → MigrationGate → Stack). tsc/lint clean, expo-doctor 20/20; full tab→modal→detail flow with native transitions + safe areas **verified live on an Android emulator (Pixel_10, Expo Go)**, no red-box. iOS unverified (no macOS host)._
+Last updated: _2026-07-23 — Phase 4 complete: create & manage habits (full CRUD). Built `CadencePicker`/`ColorPicker`/`IconPicker` + shared `HabitForm`; add via `createHabit` (`habit/new`), edit via new `updateHabit` on a separate `habit/edit/[id]` modal route; real Habits tab is a `DraggableFlatList` (drag-handle reorder persisted via new `reorderHabits`, swipe-to-archive → `archiveHabit` with confirm, archived hidden). Deleted both Phase-3 throwaways (Settings sample-detail button + `kitchen-sink.tsx`). tsc/lint clean, expo-doctor 20/20; **full CRUD loop + a relaunch round-trip verified live on an Android emulator (Pixel_10, Expo Go)** — create (each cadence type), edit (→ weekly_count=5), reorder, archive, relaunch-persists, no red-box. iOS unverified (no macOS host)._
 
 ---
 
@@ -21,7 +21,7 @@ Last updated: _2026-07-23 — Phase 3 complete: navigation shell. Native bottom 
 | 1 | Design system foundation | ✅ |
 | 2 | Data layer (DB, schema, migrations, domain) | ✅ |
 | 3 | Navigation shell | ✅ |
-| 4 | Create & manage habits | ⬜ |
+| 4 | Create & manage habits | ✅ |
 | 5 | Today screen (core loop) | ⬜ |
 | 6 | Habit detail & history | ⬜ |
 | 7 | Settings & data safety | ⬜ |
@@ -74,13 +74,16 @@ Last updated: _2026-07-23 — Phase 3 complete: navigation shell. Native bottom 
       transitions + safe areas — **verified live on Android emulator (Pixel_10, Expo Go)**,
       tsc/lint clean, expo-doctor 20/20, no red-box. *(iOS unverified — no macOS host.)*
 
-## Phase 4 — Create & manage habits ⬜
-- [ ] CadencePicker / ColorPicker / IconPicker
-- [ ] add-habit form → createHabit
-- [ ] edit form → updateHabit
-- [ ] Habits list (HabitListRow) + reorder + archive
-- [ ] validation + empty state
-- [ ] **Done-when:** CRUD persists across relaunch; cadence round-trips
+## Phase 4 — Create & manage habits ✅
+- [x] CadencePicker (segmented + weekday chips + stepper) / ColorPicker / IconPicker — all 🟢
+- [x] add-habit form (`HabitForm`) → `createHabit` (`habit/new`, appends at end)
+- [x] edit form → **`updateHabit`** (new) on a separate `habit/edit/[id]` modal route
+- [x] Habits list (`HabitListRow`) + **reorder** (draggable-flatlist → `reorderHabits`) + **archive** (swipe → `archiveHabit`, confirm, hidden)
+- [x] validation + inline errors + empty state (FAB always present)
+- [x] deleted both Phase-3 throwaways (Settings sample-detail button + `kitchen-sink.tsx`)
+- [x] **Done-when:** create/edit/archive/reorder + **relaunch-persistence verified live on
+      Android emulator (Pixel_10, Expo Go)**; cadence round-trips (daily / weekdays CSV /
+      weekly_count=5); tsc/lint clean, expo-doctor 20/20, no red-box. *(iOS unverified.)*
 
 ## Phase 5 — Today screen ⬜
 - [ ] useTodayHabits + today check-ins
@@ -153,6 +156,21 @@ _Record any deviation from the docs here, with a date and reason, so the docs st
   button on Settings (delete in Phase 4/6 once Habits list rows link to `habit/[id]`).
 - **2026-07-23 (Phase 3)** — `kitchen-sink.tsx` **kept** (not deleted) — still the only
   primitive/DB-reactivity eyeball surface until real feature screens exist (Phase 4/5).
+  → **superseded 2026-07-23 (Phase 4): both Phase-3 throwaways deleted** now that real screens
+  exist (Habits list rows link to `habit/[id]`/edit; the form exercises `createHabit`/`useLiveQuery`).
+- **2026-07-23 (Phase 4)** — **Edit routing = a separate `habit/edit/[id]` modal route**, not a
+  `?id` param on `new.tsx`; both render the **same `HabitForm`** so logic stays single-sourced.
+- **2026-07-23 (Phase 4)** — **Reorder library = `react-native-draggable-flatlist@4.0.3`**
+  (user-chosen). Age is a known risk, mitigated by verifying its reanimated/gesture-handler usage
+  against the **installed** 4.5/2.32 source (modern `Gesture` API; symbols all present) — see
+  [library-docs.md](./library-docs.md) §10. Runs clean on-device (only a benign internal
+  `InteractionManager` deprecation warning).
+- **2026-07-23 (Phase 4)** — **Archive = swipe-to-archive** (gesture-handler `ReanimatedSwipeable`,
+  confirm `Alert`); **archived habits are hidden, no archived view in v1** (history retained).
+- **2026-07-23 (Phase 4)** — **`updateHabit` + `reorderHabits` added** to `src/data/habits.ts`
+  (closes the Phase-2 "updateHabit not built" note); `createHabit` now appends at end
+  (`sortOrder` = max+1). Reorder writes are an awaited sequence, not a `db.transaction` (the
+  expo-sqlite driver is `'sync'`-kind).
 
 ## Open questions / parking lot
 - [ ] Finalize the accent source color → regenerate M3 palette hex in ui-tokens §1.2

@@ -37,6 +37,15 @@ export const strings = {
     emptyBody: "Create a habit to start building your streaks.",
     newAction: "New habit",
     fabLabel: "Add habit",
+    /** Swipe-to-archive action + confirm (docs/library-docs.md §10). */
+    archiveAction: "Archive",
+    archiveConfirmTitle: "Archive habit?",
+    archiveConfirmBody:
+      "It's removed from your lists but its history is kept. You can't undo this in v1.",
+    dragHint: "Reorder",
+    /** Accessibility labels for the manage-list controls. */
+    a11yDragHandle: "Drag to reorder",
+    a11yEditRow: "Edit habit",
   },
   settings: {
     title: "Settings",
@@ -47,9 +56,55 @@ export const strings = {
     title: "Habit detail",
     body: "History, streaks, and the heatmap will live here.",
   },
+  /** Add-habit modal (build-plan Phase 4). */
   habitNew: {
     title: "New habit",
-    body: "Name, color, icon, and cadence form goes here.",
+    submit: "Create habit",
+  },
+  /** Edit-habit modal — reuses the same form (build-plan Phase 4). */
+  habitEdit: {
+    title: "Edit habit",
+    submit: "Save changes",
+    notFound: "This habit no longer exists.",
+  },
+  /** Shared add/edit habit form — field labels, sections, validation. */
+  habitForm: {
+    nameLabel: "Name",
+    namePlaceholder: "e.g. Drink water",
+    colorLabel: "Color",
+    iconLabel: "Icon",
+    cadenceLabel: "Repeat",
+    errorNameRequired: "Give your habit a name.",
+    errorWeekdaysRequired: "Pick at least one day.",
+    errorWeeklyTarget: "Pick a target of at least 1.",
+    a11yColorSwatch: "Color",
+    a11yIconCell: "Icon",
+  },
+  /** CadencePicker copy — segment labels, weekday abbreviations, stepper (docs/ui-registry.md). */
+  cadence: {
+    daily: "Daily",
+    weekdays: "Weekdays",
+    weeklyCount: "Times / week",
+    /** Sunday-first display order; index == Weekday number (0=Sun..6=Sat). */
+    weekdayShort: ["S", "M", "T", "W", "T", "F", "S"] as const,
+    weekdayLong: [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ] as const,
+    perWeekLabel: "times per week",
+    stepperDecrement: "Fewer times per week",
+    stepperIncrement: "More times per week",
+    /** Compact summaries for the manage list (see lib cadenceSummary). */
+    summaryDaily: "Every day",
+    summaryWeeklyOne: "Once a week",
+    summaryWeeklyN: (n: number) => `${n}× a week`,
+    summaryEveryday: "Every day",
+    summaryWeekends: "Weekends",
   },
   /** Migration gate — the loading/error screens shown at boot (docs/architecture.md §8). */
   migration: {

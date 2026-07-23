@@ -67,6 +67,7 @@
 | `jest-expo` (dev) | 57.0.2 | Expo jest preset; domain tests use its `node` preset | ✅ installed (Phase 2) |
 | `@types/jest` (dev) | 29.x | jest global types (`describe`/`it`/`expect`) for tsc | ✅ installed (Phase 2) |
 | `babel-plugin-inline-import` (dev) | 3.0.0 | Inline `.sql` migrations as strings for drizzle's Expo migrator | ✅ installed (Phase 2) |
+| `react-native-draggable-flatlist` | 4.0.3 | Drag-to-reorder Habits list (persist `sortOrder`) | ✅ installed (Phase 4) — see §10 |
 
 Install commands used (for reference):
 ```bash
@@ -310,6 +311,45 @@ directly.
 - Preference stores only (theme mode, accent key, week-start). Persist via
   `persist` middleware. Keep stores tiny and flat. See
   [code-standards.md](./code-standards.md) §6.
+
+## 10. react-native-draggable-flatlist (reorder) + ReanimatedSwipeable (archive)
+
+**Reorder — `react-native-draggable-flatlist@4.0.3`.** Verified against the *installed*
+Reanimated 4.5.0 + gesture-handler 2.32 source before wiring (AGENTS opensrc-first rule):
+
+- Its peer range says `reanimated >=2.8.0`, but 4.0.3 uses the **modern gesture API**
+  (`Gesture` / `GestureDetector` from `react-native-gesture-handler`, **not** the deprecated
+  `PanGestureHandler` component) and only imports reanimated symbols that still exist in 4.5:
+  `runOnJS`, `useAnimatedReaction`, `useAnimatedScrollHandler`, `useSharedValue`,
+  `useDerivedValue`, `withSpring`, `SharedValue`, `WithSpringConfig` — all confirmed present
+  in `node_modules/react-native-reanimated@4.5.0`. The one v1-era reference is the
+  `PanGestureHandlerProperties` **type** (for a `hitSlop` prop) — still exported by gh 2.32.
+  So it runs on our stack despite its age.
+- **API (from `lib/typescript`):** default export `DraggableFlatList`; props `data`,
+  `keyExtractor`, `renderItem: ({ item, drag, isActive }) => ReactNode`,
+  `onDragEnd: ({ data, from, to }) => void`. `ScaleDecorator` (+ `ShadowDecorator`,
+  `OpacityDecorator`) from the package root wrap the row for the lift animation.
+- **Wiring:** `onDragEnd` gives the reordered `data` array → map to ids → persist with
+  `reorderHabits(ids)` (writes each row's `sortOrder`). It renders inside the
+  `GestureHandlerRootView` already in the root layout.
+
+**Archive — `ReanimatedSwipeable` (ships with gesture-handler).** Import from the subpath
+`react-native-gesture-handler/ReanimatedSwipeable` (a folder barrel — the root `index` only
+re-exports the *legacy* `Swipeable`; the Reanimated-4-compatible one is the subpath):
+```ts
+import ReanimatedSwipeable, {
+  type SwipeableMethods,
+} from 'react-native-gesture-handler/ReanimatedSwipeable';
+```
+- **API (from source):** `renderRightActions(progress, translation, methods)` returns the
+  revealed action; `onSwipeableOpen(direction)` fires when opened; `rightThreshold`,
+  `friction` tune it; `ref` exposes `SwipeableMethods.close()` to snap shut after acting.
+- Swipe a row → reveal an Archive action → confirm → `archiveHabit(id)`; archived habits
+  drop out of `useHabits` (it filters `archivedAt IS NULL`). No archived-habits view in v1.
+
+> Both were chosen with the user; the age of draggable-flatlist is a known risk, mitigated by
+> the source verification above. If a future SDK bump breaks it, the fallback is a bare
+> gesture-handler + reanimated reorder (no new dep).
 
 ## 9. Versions / upgrade policy
 

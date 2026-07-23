@@ -110,9 +110,16 @@ Large toggle that marks a habit done.
 - **Two targets:** card body → `onOpen` (detail); `CheckControl` → `onToggle`. Both ≥48dp.
 - **Motion:** entrance stagger; press scale on body.
 
-### `HabitListRow` 🟡 — Habits (manage) list item
-- **Props:** `habit`, `onEdit`, `onArchive`, `dragHandle?`.
-- Denser than HabitCard; supports reorder (drag) and archive (swipe or overflow).
+### `HabitListRow` 🟢 — Habits (manage) list item
+- **Props:** `habit: Habit`, `onEdit: () => void`, `onArchive: () => void`,
+  `onDrag?: () => void`, `isActive?: boolean`.
+- Denser than HabitCard. Leading habit-accent icon chip, `title.medium` name, `label.medium`
+  cadence summary (from `cadenceSummary(cadenceOf(habit))`). Tapping the row body → `onEdit`
+  (opens `habit/edit/[id]`). A trailing **drag handle** (`Icon "drag-horizontal-variant"`,
+  `onLongPress`/press → `onDrag` from draggable-flatlist's `RenderItemParams`) starts a
+  reorder; `isActive` lifts the row (wrapped in `ScaleDecorator`).
+- **Archive:** the row is wrapped in `ReanimatedSwipeable`; swiping left reveals an
+  `error`-tinted Archive action → confirm (Alert) → `onArchive`. (docs/library-docs.md §10)
 
 ### `StreakBadge` 🟡
 - **Props:** `current: number`, `best?: number`, `size?`.
@@ -124,15 +131,35 @@ Large toggle that marks a habit done.
   days use `errorContainer` subtly. Tapping a past day toggles (per
   [architecture.md](./architecture.md) §7.4). Never allows future days.
 
-### `CadencePicker` 🟡 — used in add/edit habit
-- **Props:** `value: Cadence`, `onChange`.
-- Segmented: Daily / Weekdays / N-per-week. Weekdays reveals 7 `Chip`s (respecting
-  week-start display pref). N-per-week reveals a stepper. Emits the flat cadence shape from
-  [architecture.md](./architecture.md) §4.
+### `CadencePicker` 🟢 — used in add/edit habit
+- **Props:** `value: Cadence`, `onChange: (c: Cadence) => void`.
+- A **segmented control** (Daily / Weekdays / N-per-week) built from `Pressable` segments in a
+  `secondaryContainer`-tinted track (selected segment morphs to a filled pill; `haptic.select`).
+  - **Weekdays** reveals 7 `Chip`s (S M T W T F S) in **display order**; selecting toggles a
+    `Weekday` (0=Sun..6=Sat, docs/architecture.md §7.2). Week-start reorders **display only**
+    (Phase-7 pref; defaults Sunday-first until then). Emits `{ type: 'weekdays', weekdays }`.
+  - **N-per-week** reveals a stepper (− N +, 1..7) → `{ type: 'weekly_count', weeklyTarget }`.
+  - **Daily** → `{ type: 'daily' }`.
+- Emits the normalized `Cadence` union; the data layer's `cadenceColumns` maps it flat.
+- No new tokens — uses `secondaryContainer`/`surface` roles, `radius.full`, `springs.default`.
 
-### `ColorPicker` 🟡 & `IconPicker` 🟡
-- Grids of the habit color keys / icon set. Selection morphs + `haptic.select`. Store the
-  **key**, not a value.
+### `ColorPicker` 🟢 & `IconPicker` 🟢
+- **ColorPicker props:** `value: HabitColorKey`, `onChange: (k: HabitColorKey) => void`.
+  A wrap grid of the 8 habit color swatches (each a habit-`accent` filled circle). Selected
+  swatch morphs (ring + scale pop, `springs.bouncy`) + `haptic.select`. Stores the **key**.
+- **IconPicker props:** `value: IconName`, `onChange: (n: IconName) => void`,
+  `colorKey?: HabitColorKey` (tints the selected cell with the habit accent). A wrap grid over
+  a curated `HABIT_ICONS` list (MaterialCommunityIcons names). Selected cell fills
+  `secondaryContainer` + morph + `haptic.select`. Stores the **icon-set name key**.
+
+### `HabitForm` 🟢 — shared add/edit form
+- **Props:** `initial: HabitFormValues` (`{ name, color, icon, cadence }`), `submitLabel`,
+  `onSubmit: (values) => void | Promise<void>`.
+- Composes `TextField` + `ColorPicker` + `IconPicker` + `CadencePicker` in a scrollable form;
+  validates (name required; weekdays ≥1 day; weekly target ≥1) with inline errors; submit button
+  shows a spinner while `onSubmit` runs. Presentation-only — the routes own the
+  `createHabit`/`updateHabit` call + dismissal. `NEW_HABIT_DEFAULTS` seeds a new habit. Lives in
+  `src/ui/habit/` so `habit/new.tsx` and `habit/edit/[id].tsx` stay thin (architecture §3).
 
 ### `CompletionSummary` 🟡 — Today header
 - **Props:** `done`, `total`, `date`.

@@ -1,39 +1,34 @@
 import { useRouter } from "expo-router";
-import { View } from "react-native";
 
-import { strings } from "@/lib";
-import { space } from "@/theme";
-import { Button, Text } from "@/ui/primitives";
+import { createHabit } from "@/data/habits";
+import { logger, strings } from "@/lib";
+import { HabitForm, NEW_HABIT_DEFAULTS, type HabitFormValues } from "@/ui/habit";
 
 /**
- * Add / edit habit — modal (docs/project-overview.md §6, docs/architecture.md §6).
+ * Add habit — modal (docs/architecture.md §6, build-plan §Phase 4).
  *
- * Navigation shell: a thin titled skeleton with a Close action so the modal can be dismissed
- * (native swipe-down also works). The CadencePicker / Color / Icon form + `createHabit`
- * arrive in build-plan Phase 4. Presented modally by the root `_layout` Stack.Screen.
+ * Thin route: renders the shared `HabitForm` with new-habit defaults and persists via
+ * `createHabit`, then dismisses (native swipe-down/back also dismiss). Edit reuses the same
+ * form at `habit/edit/[id]`.
  */
 export default function NewHabitScreen() {
   const router = useRouter();
 
-  return (
-    <View
-      className="flex-1 bg-background"
-      style={{ paddingHorizontal: space[4], paddingTop: space[6], gap: space[4] }}
-    >
-      <View style={{ gap: space[2] }}>
-        <Text variant="headline.large" color="onBackground">
-          {strings.habitNew.title}
-        </Text>
-        <Text variant="body.large" color="onSurfaceVariant">
-          {strings.habitNew.body}
-        </Text>
-      </View>
+  const handleSubmit = async (values: HabitFormValues) => {
+    try {
+      await createHabit(values);
+      router.back();
+    } catch {
+      // createHabit already logs at the data boundary; keep the modal open so the user can retry.
+      logger.error("Create habit failed from new-habit screen");
+    }
+  };
 
-      <Button
-        variant="tonal"
-        label={strings.common.done}
-        onPress={() => router.back()}
-      />
-    </View>
+  return (
+    <HabitForm
+      initial={NEW_HABIT_DEFAULTS}
+      submitLabel={strings.habitNew.submit}
+      onSubmit={handleSubmit}
+    />
   );
 }

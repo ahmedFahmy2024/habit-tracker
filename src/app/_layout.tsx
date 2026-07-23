@@ -5,6 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { MigrationGate } from "@/db/MigrationGate";
+import { strings } from "@/lib";
 
 /**
  * Root layout. Provider order (docs/architecture.md §6):
@@ -30,7 +31,15 @@ export default function RootLayout() {
             options={{
               presentation: "modal",
               headerShown: true,
-              title: "New Habit",
+              title: strings.habitNew.title,
+            }}
+          />
+          <Stack.Screen
+            name="habit/edit/[id]"
+            options={{
+              presentation: "modal",
+              headerShown: true,
+              title: strings.habitEdit.title,
             }}
           />
         </Stack>

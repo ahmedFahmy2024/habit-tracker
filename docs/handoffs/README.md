@@ -10,7 +10,7 @@ phase's handoff (and phase 0 for the foundation) before writing code** — see
 | 1 | Design system foundation | ✅ | [phase-1-design-system.md](./phase-1-design-system.md) |
 | 2 | Data layer (DB, schema, domain) | ✅ | [phase-2-data-layer.md](./phase-2-data-layer.md) |
 | 3 | Navigation shell | ✅ | [phase-3-navigation-shell.md](./phase-3-navigation-shell.md) |
-| 4 | Create & manage habits | ⬜ | — |
+| 4 | Create & manage habits | ✅ | [phase-4-crud.md](./phase-4-crud.md) |
 | 5 | Today screen | ⬜ | — |
 | 6 | Habit detail & history | ⬜ | — |
 | 7 | Settings & data safety | ⬜ | — |
