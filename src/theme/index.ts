@@ -3,5 +3,5 @@ export * from "./tokens";
 export * from "./colors";
 export * from "./habitColors";
 export * from "./motion";
-export { useTheme, useHabitColors } from "./useTheme";
+export { useTheme, useHabitColors, useAccent } from "./useTheme";
 export { ThemeSync } from "./ThemeSync";

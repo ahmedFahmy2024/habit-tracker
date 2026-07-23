@@ -9,7 +9,7 @@
  */
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { radius, shadow, space, useTheme, z, type ColorRole } from "@/theme";
+import { radius, shadow, space, useAccent, z } from "@/theme";
 
 import { Icon, type IconName } from "./Icon";
 import { Pressable } from "./Pressable";
@@ -24,8 +24,6 @@ export interface FABProps {
   disabled?: boolean;
 }
 
-const ON: ColorRole = "onPrimary";
-
 export function FAB({
   icon,
   onPress,
@@ -34,7 +32,8 @@ export function FAB({
   disabled = false,
 }: FABProps) {
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  // The FAB carries the app's global accent (Phase 8): background = accent, content = onAccent.
+  const accent = useAccent();
   const extended = label != null;
 
   return (
@@ -45,7 +44,7 @@ export function FAB({
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled }}
       className={[
-        "absolute flex-row items-center justify-center gap-2 bg-primary",
+        "absolute flex-row items-center justify-center gap-2",
         extended ? "h-14 px-5" : "h-14 w-14",
         disabled ? "opacity-40" : "",
       ]
@@ -54,14 +53,15 @@ export function FAB({
       style={{
         right: space[4],
         bottom: insets.bottom + space[4],
+        backgroundColor: accent.accent,
         borderRadius: extended ? radius.lg : radius.full,
         zIndex: z.fab,
         ...shadow.fab,
       }}
     >
-      <Icon name={icon} size={24} colorValue={colors[ON]} />
+      <Icon name={icon} size={24} colorValue={accent.onAccent} />
       {extended ? (
-        <Text variant="label.large" color={ON}>
+        <Text variant="label.large" colorValue={accent.onAccent}>
           {label}
         </Text>
       ) : null}

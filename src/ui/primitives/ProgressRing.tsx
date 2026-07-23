@@ -24,7 +24,7 @@ import Animated, {
 import Svg, { Circle } from "react-native-svg";
 
 import { haptics } from "@/lib";
-import { scalePresets, springs, timings, useMotion, useTheme } from "@/theme";
+import { scalePresets, springs, timings, useAccent, useMotion, useTheme } from "@/theme";
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -35,6 +35,11 @@ export interface ProgressRingProps {
   strokeWidth?: number;
   /** Pop + celebrate haptic when it first reaches 100%. Default true. */
   celebrateOn100?: boolean;
+  /**
+   * Raw color of the progress arc. Defaults to the user's global accent (Phase 8) so the Today
+   * ring re-tints from the accent preference; pass a specific value to override.
+   */
+  color?: string;
   /** Center content (e.g. the done/total count). */
   label?: ReactNode;
   accessibilityLabel?: string;
@@ -45,11 +50,14 @@ export function ProgressRing({
   size = 72,
   strokeWidth = 8,
   celebrateOn100 = true,
+  color,
   label,
   accessibilityLabel,
 }: ProgressRingProps) {
   const { reduced } = useMotion();
   const { colors } = useTheme();
+  const accent = useAccent();
+  const arcColor = color ?? accent.accent;
 
   const clamped = Math.max(0, Math.min(1, value));
   const r = (size - strokeWidth) / 2;
@@ -110,7 +118,7 @@ export function ProgressRing({
           cx={size / 2}
           cy={size / 2}
           r={r}
-          stroke={colors.primary}
+          stroke={arcColor}
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           fill="none"

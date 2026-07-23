@@ -1,5 +1,7 @@
 import { useColorScheme } from "nativewind";
 
+import { usePreferences } from "@/store";
+
 import { palette, type ColorScheme } from "./colors";
 import { habitColors, type HabitColorKey, type HabitTonalColors } from "./habitColors";
 
@@ -25,4 +27,21 @@ export function useTheme() {
 export function useHabitColors(key: HabitColorKey): HabitTonalColors {
   const { scheme } = useTheme();
   return habitColors(scheme, key);
+}
+
+/**
+ * Resolves the user's chosen **global accent** (the persisted `accentKey` preference) into its
+ * tonal palette for the active scheme. This is the ONE place app chrome reads the accent, so the
+ * whole app re-tints from a single preference — no inline branches (docs/ui-rules.md §1/§2).
+ *
+ * Scope (Phase 8 decision): the accent re-tints the neutral, non-per-habit interactive chrome —
+ * the FAB, filled/tonal/outlined/text `Button`s, and the Today `ProgressRing` + "All done!"
+ * header. Per-habit surfaces (habit cards, their CheckControl) keep their OWN habit color via
+ * `useHabitColors`; the accent never overrides those. Returns raw values because a per-user accent
+ * can't be a global M3 className role (same rationale as per-habit colors, docs/ui-tokens.md §1.3).
+ */
+export function useAccent(): HabitTonalColors {
+  const { scheme } = useTheme();
+  const accentKey = usePreferences((s) => s.accentKey);
+  return habitColors(scheme, accentKey);
 }

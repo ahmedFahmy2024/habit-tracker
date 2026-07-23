@@ -13,5 +13,9 @@ phase's handoff (and phase 0 for the foundation) before writing code** — see
 | 4 | Create & manage habits | ✅ | [phase-4-crud.md](./phase-4-crud.md) |
 | 5 | Today screen (core loop) | ✅ | [phase-5-today.md](./phase-5-today.md) |
 | 6 | Habit detail & history | ✅ | [phase-6-detail.md](./phase-6-detail.md) |
-| 7 | Settings & data safety | 🟨 | [phase-7-settings.md](./phase-7-settings.md) · [BLOCKERS](./phase-7-BLOCKERS.md) |
-| 8 | Polish, a11y, performance | ⬜ | — |
+| 7 | Settings & data safety | ✅ | [phase-7-settings.md](./phase-7-settings.md) · [BLOCKERS](./phase-7-BLOCKERS.md) |
+| 8 | Polish, a11y, performance | ✅ | [phase-8-polish.md](./phase-8-polish.md) |
+
+> **Phase 7 was flipped 🟨 → ✅ in Phase 8**, whose first task closed the three inherited
+> on-device gaps (dark surfaces flip · export→wipe→import round-trip · week-start reorder). See
+> [phase-8-polish.md](./phase-8-polish.md) "What this phase delivered" (a)/(b)/(c).

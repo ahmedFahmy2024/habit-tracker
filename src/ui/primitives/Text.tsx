@@ -26,6 +26,12 @@ export interface TextProps extends RNTextProps {
   variant?: TextVariant;
   /** Color role token (default `onSurface`). Maps to a `text-*` className. */
   color?: ColorRole;
+  /**
+   * A raw color value that overrides `color` — for the ONE case a role can't express: a per-user
+   * value like the global accent's on-color (docs/ui-tokens.md §1.3), mirroring `Icon.colorValue`.
+   * Prefer `color` (a role) everywhere else.
+   */
+  colorValue?: string;
   /** Expressive emphasized weight for hero numbers (docs/ui-tokens.md §2). */
   emphasized?: boolean;
 }
@@ -63,11 +69,14 @@ const COLOR_CLASS: Partial<Record<ColorRole, string>> = {
 export function Text({
   variant = "body.large",
   color = "onSurface",
+  colorValue,
   emphasized = false,
   className,
+  style,
   ...rest
 }: TextProps) {
-  const colorClass = COLOR_CLASS[color] ?? "text-on-surface";
+  // A raw `colorValue` wins over the role className (used only for per-user accent on-colors).
+  const colorClass = colorValue ? "" : (COLOR_CLASS[color] ?? "text-on-surface");
   return (
     <RNText
       className={[
@@ -78,6 +87,7 @@ export function Text({
       ]
         .filter(Boolean)
         .join(" ")}
+      style={colorValue ? [{ color: colorValue }, style] : style}
       {...rest}
     />
   );

@@ -37,7 +37,6 @@ import {
   timings,
   useHabitColors,
   useMotion,
-  useTheme,
   type HabitColorKey,
 } from "@/theme";
 import { Pressable } from "@/ui/primitives";
@@ -67,11 +66,9 @@ export function CheckControl({
   size = 48,
 }: CheckControlProps) {
   const { reduced } = useMotion();
-  const { accent } = useHabitColors(colorKey);
-  const { colors } = useTheme();
-  // Contrast for the check + idle outline. The accent is a saturated fill; onSurface's inverse
-  // reads well on it across both schemes via the theme's inverseOnSurface pairing.
-  const onAccent = colors.surface; // high-contrast mark on the filled accent circle
+  const { accent, onAccent } = useHabitColors(colorKey);
+  // `onAccent` is the palette's AA-checked on-accent color (white on light accents, black on dark
+  // pastels — ≥5.5:1 / ≥12:1, docs/ui-tokens.md §1.3) — the correct mark on the filled circle.
 
   // progress: 0 = unchecked (square outline), 1 = checked (filled circle + drawn check).
   const progress = useSharedValue(checked ? 1 : 0);

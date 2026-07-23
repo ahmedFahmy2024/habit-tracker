@@ -9,7 +9,9 @@
 Per-phase handoff records: [handoffs/](./handoffs/) (written at the end of each phase — see
 [../AGENTS.md](../AGENTS.md) § Phase handoffs).
 
-Last updated: _2026-07-23 — Phase 7 code-complete (🟨, on-device confirmation pending): Settings & data safety. Persisted zustand prefs store (`src/store/preferences.ts`) — theme mode / accent / week-start in a `key_value` sqlite table, hydrated **synchronously** (no theme flash); `ThemeSync` drives NativeWind `setColorScheme` (system follows OS). Week-start is **display-only** (`src/lib/weekOrder.ts` — reorders CadencePicker chips + Heatmap legend/rows; 35 domain tests still green). Lossless **export/import** (`src/data/backup.ts`) — versioned JSON via `expo-file-system` File/Paths + `expo-sharing`; import picks (`expo-document-picker`), validates (rejects newer version + orphan check-ins), and **replace-all in one `withTransactionSync`**. Thin Settings screen + new `SegmentedControl`/`SettingsSection`/`SettingsRow`; accent picker reuses `ColorPicker`; About+version from `expo-constants`. New deps: `expo-file-system`/`expo-sharing`/`expo-document-picker` + migration `0001` (key_value). **Found + fixed a latent dark-theme bug: `global.css` dark variables need `.dark:root`, not a bare `.dark`, or surfaces don't flip on native.** tsc/lint (0 warnings)/expo-doctor 20/20 clean; logic proven by a Node script. **On-device: Settings renders + prefs persist + theme flips habit colors/native tabs verified; the `.dark:root` surface-flip fix and the export→wipe→import round-trip are NOT yet live-confirmed** (emulator/adb wedged during testing) — see [handoffs/phase-7-BLOCKERS.md](./handoffs/phase-7-BLOCKERS.md). iOS unverified._
+Last updated: _2026-07-23 — **Phase 8 complete (✅) — v1 feature-complete.** Polish/a11y/perf pass + closed the three inherited Phase-7 on-device gaps (so **Phase 7 flipped 🟨→✅**): the `.dark:root` surface flip, the export→wipe→import round-trip (lossless — "Restored 2 habits and 3 check-ins", streaks recomputed 🔥2), and the week-start chip reorder are all **confirmed live on the Pixel_10**. Wired the **accent preference** to re-tint app chrome (FAB + all `Button` variants + Today `ProgressRing` + "All done!") via a new `useAccent()` hook + an `onAccent` palette token (AA-checked) — habit cards keep their own color (verified purple accent live). Full **ui-rules §1** + **a11y §8** audit (dynamic type scales to 1.5× without clipping); **§8 empty/error/loading** states all real; **§9** perf sound (memoized stats, no theme flash on cold start). **App icon + splash + config**: generated M3 brand assets (green squircle + cream check) via `scripts/gen-icons.mjs`; `app.json` → name **Happit** / slug+scheme `happit` / cream+dark splash / bundle id `com.happit.app`; **local `expo prebuild` succeeds clean** (real EAS build deferred by decision). tsc / lint (0) / expo-doctor 20/20 / 35 domain tests green. project-overview §3 goals demonstrably met on-device. iOS unverified (no macOS host). See [handoffs/phase-8-polish.md](./handoffs/phase-8-polish.md)._
+
+<!-- prior: _2026-07-23 — Phase 7 code-complete (🟨, on-device confirmation pending): Settings & data safety. Persisted zustand prefs store (`src/store/preferences.ts`) — theme mode / accent / week-start in a `key_value` sqlite table, hydrated **synchronously** (no theme flash); `ThemeSync` drives NativeWind `setColorScheme` (system follows OS). Week-start is **display-only** (`src/lib/weekOrder.ts` — reorders CadencePicker chips + Heatmap legend/rows; 35 domain tests still green). Lossless **export/import** (`src/data/backup.ts`) — versioned JSON via `expo-file-system` File/Paths + `expo-sharing`; import picks (`expo-document-picker`), validates (rejects newer version + orphan check-ins), and **replace-all in one `withTransactionSync`**. Thin Settings screen + new `SegmentedControl`/`SettingsSection`/`SettingsRow`; accent picker reuses `ColorPicker`; About+version from `expo-constants`. New deps: `expo-file-system`/`expo-sharing`/`expo-document-picker` + migration `0001` (key_value). **Found + fixed a latent dark-theme bug: `global.css` dark variables need `.dark:root`, not a bare `.dark`, or surfaces don't flip on native.** tsc/lint (0 warnings)/expo-doctor 20/20 clean; logic proven by a Node script. **On-device: Settings renders + prefs persist + theme flips habit colors/native tabs verified; the `.dark:root` surface-flip fix and the export→wipe→import round-trip are NOT yet live-confirmed** (emulator/adb wedged during testing) — see [handoffs/phase-7-BLOCKERS.md](./handoffs/phase-7-BLOCKERS.md). iOS unverified._ -->
 
 <!-- prior: _2026-07-23 — Phase 6 complete: Habit detail & history (trustworthy stats). New `useHabitStats(id, today)` (`src/data/habitStats.ts`) derives current/best streak, completion %, heatmap buckets, and total count from the pure domain in one §9-memoized `useMemo`; the `StreakBadge` hero (`display.medium` emphasized, accent-tinted, quiet "No streak yet" at 0), the `Heatmap` (**pure View/flex grid**, last 26 weeks, horizontally scrollable; per-cell `Pressable` backfill of past/today via `toggleCheckin`, future cells inert; done=accent / missed=`errorContainer` / unscheduled=`surfaceContainerHighest`), a 3-stat row (Best · Completion · Check-ins), and Edit/Archive/**Delete** actions. Added the **`deleteHabit`** hard-delete writer + **`PRAGMA foreign_keys = ON`** (so the checkins FK cascade actually fires) + `formatDayShort` + `heatmap.*` geometry tokens. `habit/[id].tsx` rewritten thin (loading gap + not-found). tsc/lint clean, expo-doctor 20/20; **verified live on Android emulator (Pixel_10, Expo Go)** — created a daily habit, opened detail, **backfilled a past day** (Best/Completion/Check-ins + heatmap cell update reactively), **checked today** → "🔥 1 day streak", un-check reversed it, Edit pre-populated, **Delete → destructive confirm → hard delete + cascade** (Today empty). The exact stat pipeline also hand-verified against a throwaway domain script (4 cadence cases, all exact). iOS unverified (no macOS host). NOTE: the Pixel_10 AVD needed `-memory 3072` — at its default 2 GB the low-memory-killer bounced Expo Go._ -->
 
@@ -26,8 +28,8 @@ Last updated: _2026-07-23 — Phase 7 code-complete (🟨, on-device confirmatio
 | 4 | Create & manage habits | ✅ |
 | 5 | Today screen (core loop) | ✅ |
 | 6 | Habit detail & history | ✅ |
-| 7 | Settings & data safety | 🟨 |
-| 8 | Polish, a11y, performance | ⬜ |
+| 7 | Settings & data safety | ✅ |
+| 8 | Polish, a11y, performance | ✅ |
 
 ---
 
@@ -113,7 +115,7 @@ Last updated: _2026-07-23 — Phase 7 code-complete (🟨, on-device confirmatio
       reactively; check-today→"🔥 1"; future never toggled; edit/archive/delete work; tsc/lint
       clean, expo-doctor 20/20, no red-box. *(iOS unverified — no macOS host.)*
 
-## Phase 7 — Settings & data safety 🟨 (code-complete; on-device confirmation pending)
+## Phase 7 — Settings & data safety ✅ (on-device gaps closed in Phase 8)
 - [x] theme mode / accent / week-start — **persisted** in a `key_value` sqlite table, hydrated
       **synchronously** (no theme flash); `ThemeSync` drives NativeWind `setColorScheme` (system
       follows OS). Store: `src/store/preferences.ts`.
@@ -127,18 +129,24 @@ Last updated: _2026-07-23 — Phase 7 code-complete (🟨, on-device confirmatio
 - [x] thin Settings screen + new `SegmentedControl` / `SettingsSection` / `SettingsRow` (🟢);
       accent picker = reuse `ColorPicker`.
 - [x] tsc / lint (0 warnings) / expo-doctor 20/20 clean; logic proven by a throwaway Node script.
-- [ ] **Done-when (partially met):** prefs persist ✅ + instant re-theme (habit colors + native
-      tabs ✅; **NativeWind surfaces flip fix applied but NOT yet live-confirmed** — the
-      `.dark:root` fix); **export→wipe→import round-trip NOT yet run on-device**. See
-      [handoffs/phase-7-BLOCKERS.md](./handoffs/phase-7-BLOCKERS.md) for exact remaining steps.
+- [x] **Done-when (met — gaps closed in Phase 8, verified live on Pixel_10):** prefs persist +
+      instant re-theme (habit colors + native tabs + **NativeWind surfaces flip via `.dark:root`**);
+      **export→wipe→import round-trip lossless** ("Restored 2 habits and 3 check-ins", streaks
+      recomputed); week-start chip reorder. See [handoffs/phase-8-polish.md](./handoffs/phase-8-polish.md)
+      (a)/(b)/(c). *(iOS unverified — no macOS host.)*
 
-## Phase 8 — Polish, a11y, performance ⬜
-- [ ] ui-rules §1 checklist audit
-- [ ] a11y pass
-- [ ] perf vs architecture §9 budget
-- [ ] empty/error/loading states everywhere
-- [ ] icon/splash + EAS build
-- [ ] **Done-when:** project-overview §3 goals demonstrably met on device
+## Phase 8 — Polish, a11y, performance ✅
+- [x] closed the three inherited Phase-7 on-device gaps (dark surfaces / export-import / week-start) — verified live
+- [x] **accent preference wired** — `useAccent()` + `onAccent` token re-tint FAB + all `Button`
+      variants + Today `ProgressRing` + "All done!"; habit cards keep their own color (verified live)
+- [x] ui-rules §1 checklist audit — every screen (tokens only, motion+haptics, ≥48dp, reduced-motion, AA, one accent/surface)
+- [x] a11y pass (§8) — roles/labels/states; **dynamic type to 1.5× without clipping** (verified live); color never the only signal
+- [x] perf vs architecture §9 — memoized stats, 26wk heatmap smooth, **no theme flash on cold start**
+- [x] empty/error/loading states everywhere (§8) — all real (migration/no-habits/nothing-due/not-found/backup)
+- [x] icon/splash + app config + **local prebuild clean** (`scripts/gen-icons.mjs`; name Happit / bundle id com.happit.app; real EAS build deferred by decision)
+- [x] **Done-when:** project-overview §3 goals demonstrably met on the Pixel_10 (frictionless <5s
+      check-in · M3 Expressive · trustworthy streaks/history · zero data loss). tsc/lint/doctor
+      clean, 35 domain tests green. *(iOS unverified — no macOS host.)*
 
 ---
 
@@ -251,6 +259,33 @@ _Record any deviation from the docs here, with a date and reason, so the docs st
   (`weekdayDisplayOrder` / `reorderBySunday`); `src/domain` never receives `weekStart`. The old
   Sunday-first `WEEKDAY_DISPLAY_ORDER` constant was removed as superseded. 35 domain tests confirm
   no streak/schedule regression.
+- **2026-07-23 (Phase 8)** — **Global accent preference re-tints app chrome only** (FAB + all
+  `Button` variants + Today `ProgressRing` + "All done!"), via a new **`useAccent()`** hook (the one
+  place chrome reads the persisted `accentKey`) + a new **`onAccent`** palette token (white on light
+  accents ≥5.5:1, black on dark pastels ≥12:1). Per-habit surfaces (cards, `CheckControl`) keep
+  their OWN color via `useHabitColors` — the accent never overrides those. `SegmentedControl`
+  selected tint + `TextField` focus stay on the neutral M3 `primary`/`primaryContainer` roles
+  (out of the accent's scope). `Text` gained a `colorValue?` raw override (mirrors `Icon.colorValue`)
+  for the accent on-color.
+- **2026-07-23 (Phase 8)** — **`CheckControl` check mark uses the palette `onAccent`** (was
+  `colors.surface`) — semantically correct + marginally higher contrast on the filled accent circle.
+- **2026-07-23 (Phase 8)** — **Brand assets generated from the M3 palette** (green `#386a20`
+  squircle + cream `#fdfcf5` check) via a pure-Node **pngjs** rasterizer (`scripts/gen-icons.mjs`) —
+  no sharp/SVG rasterizer available on this Windows host. Placeholder-quality; re-run the script
+  with the finalized accent hue to regenerate. Removed the default `assets/expo.icon` bundle.
+- **2026-07-23 (Phase 8)** — **`app.json`: name `Happit`, slug + scheme `happit`, bundle id
+  `com.happit.app`** (iOS + Android), cream + dark splash (`resizeMode: contain`, `imageWidth: 160`),
+  cream adaptive-icon background. **EAS = local prebuild only** (user decision, no account-touching
+  action): `expo prebuild --platform android` succeeds clean; the real cloud build/submit is
+  deferred (use the `eas-app-stores` skill with the user's credentials when wanted).
+- **2026-07-23 (Phase 8)** — **The benign yellow "!" dev toast is
+  `react-native-draggable-flatlist`'s `InteractionManager` deprecation warning** (not our code, not
+  an error). Its invisible bottom overlay can eat taps on bottom-pinned buttons in Expo Go; a reload
+  clears it. Candidate tidy-up: `LogBox.ignoreLogs(['InteractionManager has been deprecated'])`.
+- **2026-07-23 (Phase 8)** — **Production cold-start (<1.5s) is not measurable in Expo Go** (dev
+  bundle download + dev transforms inflate it); the architecture meets the budget by design (Hermes,
+  sync prefs hydration → no theme flash confirmed on a cold launch, tiny migration, memoized stats).
+  A real number needs a release build / EAS Observe — deferred with the local-prebuild-only decision.
 
 ## Open questions / parking lot
 - [ ] Finalize the accent source color → regenerate M3 palette hex in ui-tokens §1.2

@@ -109,8 +109,14 @@ the UI. Keep the set small and distinct.
 | `pink` | social |
 | `yellow` | fun |
 
-> Implementation: a `HABIT_PALETTES: Record<HabitColorKey, {container, onContainer, accent}>`
+> Implementation: a `HABIT_PALETTES: Record<HabitColorKey, {container, onContainer, accent, onAccent}>`
 > per scheme in `src/theme/habitColors.ts`. Never store hex in the DB.
+>
+> `onAccent` (added Phase 8) is the text/icon color drawn ON the saturated `accent` (e.g. the
+> accent-tinted FAB / filled button). Light accents are mid-tone → `onAccent = #ffffff` (AA ≥5.5:1
+> across all 8 hues); dark accents are light pastels → `onAccent = #000000` (AA ≥12:1). The same
+> palette powers **per-habit** color (`useHabitColors`) AND the **global accent** preference
+> (`useAccent`, which resolves the persisted `accentKey`); see ui-registry §Button.
 
 ## 2. Typography
 

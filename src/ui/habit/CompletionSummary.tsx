@@ -11,7 +11,7 @@
 import { View } from "react-native";
 
 import { strings } from "@/lib";
-import { space } from "@/theme";
+import { space, useAccent } from "@/theme";
 import { ProgressRing, Text } from "@/ui/primitives";
 
 export interface CompletionSummaryProps {
@@ -24,6 +24,8 @@ export interface CompletionSummaryProps {
 export function CompletionSummary({ done, total, date }: CompletionSummaryProps) {
   const value = total > 0 ? done / total : 0;
   const allDone = total > 0 && done === total;
+  // The "All done!" hero carries the global accent, matching the ring it sits beside (Phase 8).
+  const accent = useAccent();
 
   return (
     <View
@@ -51,7 +53,7 @@ export function CompletionSummary({ done, total, date }: CompletionSummaryProps)
           {date}
         </Text>
         {allDone ? (
-          <Text variant="headline.large" color="primary">
+          <Text variant="headline.large" colorValue={accent.accent}>
             {strings.today.allDoneTitle}
           </Text>
         ) : (

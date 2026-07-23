@@ -29,8 +29,10 @@ Single icon primitive over `@expo/vector-icons/MaterialCommunityIcons`.
 Typed wrapper enforcing the type scale.
 - **Props:** `variant: 'display.medium' | 'headline.large' | … | 'label.small'` (see
   [ui-tokens.md](./ui-tokens.md) §2), `color?` (role token, default `onSurface`),
+  `colorValue?` (raw override — for per-user accent on-colors only, mirrors `Icon.colorValue`),
   `emphasized?: boolean`, plus RN `Text` props.
 - **Rules:** the *only* way to render text. Scales with dynamic type. No inline fontSize.
+  `colorValue` is reserved for the global-accent on-color (Phase 8); use `color` (a role) elsewhere.
 
 ### `Surface` 🟢
 Tonal container; the elevation primitive.
@@ -47,9 +49,19 @@ Base interactive wrapper. Everything tappable is built on this.
   ≥48dp target via hitSlop.
 
 ### `Button` 🟢
-- **Variants:** `filled` (primary), `tonal` (primaryContainer), `outlined`, `text`.
+- **Variants:** `filled` (accent fill), `tonal` (accent container), `outlined` (accent border/label),
+  `text` (accent label). **All variants carry the global accent** (Phase 8, via `useAccent()`) — the
+  filled/outlined/text label + the outlined border are the accent; the filled content is `onAccent`.
 - **Props:** `variant`, `label`, `icon?`, `onPress`, `loading?`, `disabled?`, `fullWidth?`.
 - **Shape:** `full` (pill). **Type:** `label.large`. **Motion:** press scale + spring back.
+
+> **Global accent (Phase 8):** `useAccent()` (`src/theme/useTheme.ts`) resolves the persisted
+> `accentKey` preference into its tonal palette for the active scheme. It is the ONE place app
+> chrome reads the accent, so the whole app re-tints from a single preference. Consumers: **`FAB`,
+> `Button` (all variants), `ProgressRing` (default arc), `CompletionSummary` ("All done!")**. Habit
+> cards/CheckControl keep their OWN per-habit color via `useHabitColors` — the accent never overrides
+> those. The `SegmentedControl` selected tint stays on the neutral M3 `primaryContainer` role (out of
+> the accent's scope — it's a settings-local control).
 
 ### `IconButton` 🟢
 - **Props:** `icon`, `onPress`, `variant?: 'standard'|'tonal'|'filled'`, `size?`,
