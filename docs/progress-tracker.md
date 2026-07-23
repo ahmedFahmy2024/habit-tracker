@@ -9,7 +9,7 @@
 Per-phase handoff records: [handoffs/](./handoffs/) (written at the end of each phase — see
 [../AGENTS.md](../AGENTS.md) § Phase handoffs).
 
-Last updated: _2026-07-23 — Phase 4 complete: create & manage habits (full CRUD). Built `CadencePicker`/`ColorPicker`/`IconPicker` + shared `HabitForm`; add via `createHabit` (`habit/new`), edit via new `updateHabit` on a separate `habit/edit/[id]` modal route; real Habits tab is a `DraggableFlatList` (drag-handle reorder persisted via new `reorderHabits`, swipe-to-archive → `archiveHabit` with confirm, archived hidden). Deleted both Phase-3 throwaways (Settings sample-detail button + `kitchen-sink.tsx`). tsc/lint clean, expo-doctor 20/20; **full CRUD loop + a relaunch round-trip verified live on an Android emulator (Pixel_10, Expo Go)** — create (each cadence type), edit (→ weekly_count=5), reorder, archive, relaunch-persists, no red-box. iOS unverified (no macOS host)._
+Last updated: _2026-07-23 — Phase 5 complete: Today screen (the core loop). New `useTodayHabits` (`src/data/today.ts`) composes active+scheduled habits × today's check-ins with a memoized per-habit streak (off one `useAllCheckins` subscription); the signature `CheckControl` (radius→circle morph + fill + **SVG stroke-draw check** + `scale.pop`, haptics, a11y checkbox), `ProgressRing` primitive (SVG `strokeDashoffset` + 100% pop/celebrate), `HabitCard` (two ≥48dp targets: body→detail, control→toggle), and `CompletionSummary` ("All done!" at 100%). Added **`react-native-svg@15.15.4`** (user-chosen for the stroke-draws; API verified from source, library-docs §11) + `todayString()`/`formatDayLong()` boundary helpers. Today tab wired thin with a `FadeInDown` entrance stagger + reduced-motion path. tsc/lint clean, expo-doctor 20/20; **core loop verified live on Android emulator (Pixel_10, Expo Go)** — toggle morph + reactive ring, 3/3 "All done!" celebration, correct day-vs-week streak units, card→detail, and a Weekdays habit correctly excluded on a non-scheduled day. iOS unverified (no macOS host)._
 
 ---
 
@@ -22,7 +22,7 @@ Last updated: _2026-07-23 — Phase 4 complete: create & manage habits (full CRU
 | 2 | Data layer (DB, schema, migrations, domain) | ✅ |
 | 3 | Navigation shell | ✅ |
 | 4 | Create & manage habits | ✅ |
-| 5 | Today screen (core loop) | ⬜ |
+| 5 | Today screen (core loop) | ✅ |
 | 6 | Habit detail & history | ⬜ |
 | 7 | Settings & data safety | ⬜ |
 | 8 | Polish, a11y, performance | ⬜ |
@@ -85,14 +85,20 @@ Last updated: _2026-07-23 — Phase 4 complete: create & manage habits (full CRU
       Android emulator (Pixel_10, Expo Go)**; cadence round-trips (daily / weekdays CSV /
       weekly_count=5); tsc/lint clean, expo-doctor 20/20, no red-box. *(iOS unverified.)*
 
-## Phase 5 — Today screen ⬜
-- [ ] useTodayHabits + today check-ins
-- [ ] CheckControl (morph + haptics + a11y)
-- [ ] HabitCard (two targets)
-- [ ] CompletionSummary + ProgressRing + "All done!"
-- [ ] entrance stagger + reduced-motion
-- [ ] streak labels
-- [ ] **Done-when:** <5s check-in; reactive progress; 100% celebration; empty state
+## Phase 5 — Today screen ✅
+- [x] `useTodayHabits` (`src/data/today.ts`) + today check-ins + memoized per-habit streak
+      (over one `useAllCheckins` subscription; scheduled-today filter via `isScheduledOn`)
+- [x] `CheckControl` — radius→circle morph + fill + **SVG stroke-draw check** + `scale.pop`
+      (`springs.bouncy`); `haptic.check`/`uncheck`; reduced-motion cross-fade; a11y checkbox
+- [x] `HabitCard` — two ≥48dp targets (body → `habit/[id]`; `CheckControl` → toggle)
+- [x] `CompletionSummary` + `ProgressRing` (SVG `strokeDashoffset`) + "All done!" at 100%
+      (ring pop + `haptic.celebrate` on the rising edge)
+- [x] entrance stagger (`FadeInDown.delay`, capped) + reduced-motion (0 stagger) path
+- [x] streak labels — days ("🔥 5") vs weeks ("🔥 3 wk") from `computeStreak`; hidden at 0
+- [x] added `react-native-svg@15.15.4` (stroke-draws) + `todayString`/`formatDayLong` helpers
+- [x] **Done-when:** <5s check-in; reactive progress; 100% celebration; correct not-scheduled
+      exclusion — **verified live on Android emulator (Pixel_10, Expo Go)**; tsc/lint clean,
+      expo-doctor 20/20, no red-box. *(iOS unverified — no macOS host.)*
 
 ## Phase 6 — Habit detail & history ⬜
 - [ ] StreakBadge (current+best)
@@ -171,6 +177,19 @@ _Record any deviation from the docs here, with a date and reason, so the docs st
   (closes the Phase-2 "updateHabit not built" note); `createHabit` now appends at end
   (`sortOrder` = max+1). Reorder writes are an awaited sequence, not a `db.transaction` (the
   expo-sqlite driver is `'sync'`-kind).
+- **2026-07-23 (Phase 5)** — **`react-native-svg@15.15.4` added** (user-chosen) for **true SVG
+  stroke-draws**: the `CheckControl` check (`Path` `strokeDashoffset`) and `ProgressRing`
+  (`Circle`). API verified from installed source before wiring; recorded in library-docs §11.
+  In Expo Go's bundled module set (no dev build), but Metro needs `--clear` after install.
+- **2026-07-23 (Phase 5)** — **`useTodayHabits` in a new `src/data/today.ts`**; the per-habit
+  **streak is computed in the hook (memoized)**, not per-card (§9), from one `useAllCheckins`
+  subscription grouped by habit (no N per-card live queries).
+- **2026-07-23 (Phase 5)** — **"today" via a shared `todayString()` in `src/lib/date.ts`** (the
+  single data-boundary `new Date()`); the domain still never reads the clock. **Week-start
+  (Phase 7) intentionally NOT wired** — streaks stay ISO-week / display-agnostic (§7.3).
+- **2026-07-23 (Phase 5)** — `CheckControl` fires the haptic in `onPressIn` (picks `check` vs
+  `uncheck` from the resulting state) with `scaleOnPress={false}` (the morph is the feedback);
+  the fill uses reanimated's documented `'transparent'` interpolation (alpha-0 of the accent).
 
 ## Open questions / parking lot
 - [ ] Finalize the accent source color → regenerate M3 palette hex in ui-tokens §1.2

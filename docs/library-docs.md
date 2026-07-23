@@ -68,6 +68,7 @@
 | `@types/jest` (dev) | 29.x | jest global types (`describe`/`it`/`expect`) for tsc | ✅ installed (Phase 2) |
 | `babel-plugin-inline-import` (dev) | 3.0.0 | Inline `.sql` migrations as strings for drizzle's Expo migrator | ✅ installed (Phase 2) |
 | `react-native-draggable-flatlist` | 4.0.3 | Drag-to-reorder Habits list (persist `sortOrder`) | ✅ installed (Phase 4) — see §10 |
+| `react-native-svg` | 15.15.4 | SVG stroke-draw for `CheckControl` check + `ProgressRing` (Today) | ✅ installed (Phase 5) — see §11 |
 
 Install commands used (for reference):
 ```bash
@@ -350,6 +351,35 @@ import ReanimatedSwipeable, {
 > Both were chosen with the user; the age of draggable-flatlist is a known risk, mitigated by
 > the source verification above. If a future SDK bump breaks it, the fallback is a bare
 > gesture-handler + reanimated reorder (no new dep).
+
+## 11. react-native-svg (Today: CheckControl check-draw + ProgressRing) — Phase 5
+
+Installed with `bunx expo install react-native-svg` → **`15.15.4`** (the SDK-57-compatible
+pin). Chosen (with the user) over an SVG-free approach so both the CheckControl's animated
+checkmark and the ProgressRing render as **true stroke-draws** (`strokeDashoffset`), which is
+the more Expressive result than a View-clip arc.
+
+- **Exports (from `node_modules/react-native-svg/lib/typescript`):** the default export is
+  `Svg`; `Circle` and `Path` come from the package root (via `./elements`). `CircleProps` /
+  `PathProps` both extend `CommonPathProps`, which includes `strokeDasharray`,
+  `strokeDashoffset`, `strokeLinecap`, `strokeWidth`, `stroke`, `fill` — all verified in
+  `lib/extract/types.d.ts`. `Circle`/`Path` are classes (`extends Shape<…>`), so they wrap
+  cleanly with `Animated.createAnimatedComponent`.
+- **Animating the draw (reanimated 4.5):** `useAnimatedProps` **is** present in 4.5
+  (`hook/useAnimatedProps.d.ts`). Pattern:
+  ```ts
+  const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+  const props = useAnimatedProps(() => ({ strokeDashoffset: offset.get() }));
+  // <AnimatedCircle animatedProps={props} strokeDasharray={C} … />
+  ```
+  A full-length `strokeDasharray` (= the circle circumference / the path length) with an
+  animated `strokeDashoffset` from `len → 0` draws the stroke on. Same technique for the
+  ProgressRing circle and the CheckControl check `Path`.
+- **Reduced motion:** skip the offset animation and set the final `strokeDashoffset` (0 for
+  fully drawn) directly, per ui-rules §1.5.
+- **No extra config.** react-native-svg autolinks under Expo; no metro/babel change. Renders
+  inside the existing `GestureHandlerRootView` app tree. (Path lengths are computed as plain
+  geometry constants, not measured, to keep the worklet pure.)
 
 ## 9. Versions / upgrade policy
 

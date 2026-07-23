@@ -26,11 +26,33 @@ export const strings = {
     genericTitle: "Nothing here yet",
     genericBody: "When there's something to show, it'll appear here.",
   },
-  /** Tab screen copy (build-plan Phase 3 — navigation shell). */
+  /** Today screen copy (build-plan Phase 3 empty state + Phase 5 core loop). */
   today: {
     emptyTitle: "Add your first habit",
     emptyBody: "Habits you're doing today will show up here. Start by adding one.",
     emptyAction: "Add your first habit",
+    /** Shown when habits exist but none are scheduled for today (docs/architecture.md §8). */
+    noneScheduledTitle: "Nothing due today",
+    noneScheduledBody: "No habits are scheduled for today. Enjoy the breather.",
+    /** Header count, e.g. "2 of 5 done". */
+    progressCount: (done: number, total: number) => `${done} of ${total} done`,
+    /** Celebratory all-done state (docs/ui-rules.md §motion). */
+    allDoneTitle: "All done!",
+    allDoneBody: "Every habit for today is checked off. Nice work.",
+    /** A11y label for the header progress ring. */
+    a11yProgress: (done: number, total: number) =>
+      `Today's progress: ${done} of ${total} habits done`,
+    /** CheckControl a11y label prefix; the habit name is appended by the card. */
+    a11yToggle: "Mark done",
+    /** Streak label for a card, e.g. "🔥 5" (days) or "🔥 3 wk" (weeks). */
+    streakDays: (n: number) => `🔥 ${n}`,
+    streakWeeks: (n: number) => `🔥 ${n} wk`,
+    a11yStreakDays: (n: number) =>
+      `${n} day streak`,
+    a11yStreakWeeks: (n: number) =>
+      `${n} week streak`,
+    /** A11y label for a card body (opens detail). */
+    a11yOpenDetail: "Open habit details",
   },
   habits: {
     emptyTitle: "No habits yet",

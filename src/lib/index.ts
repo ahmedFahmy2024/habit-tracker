@@ -4,3 +4,4 @@ export { newId } from "./id";
 export { logger } from "./logger";
 export { strings } from "./strings";
 export { cadenceSummary, WEEKDAY_DISPLAY_ORDER } from "./cadence";
+export { todayString, formatDayLong } from "./date";

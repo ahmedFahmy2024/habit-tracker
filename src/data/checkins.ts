@@ -27,6 +27,16 @@ export function useCheckinsForDay(day: DayString) {
 }
 
 /**
+ * Live check-ins for ALL habits (full history). Used by `useTodayHabits` to compute each
+ * card's streak from a single subscription rather than one live query per habit (hooks can't
+ * be called in a loop, and per-habit subscriptions would be O(habits) queries). Callers group
+ * by `habitId` and hand each habit's day list to `computeStreak`.
+ */
+export function useAllCheckins() {
+  return useLiveQuery(db.select().from(checkins));
+}
+
+/**
  * Toggle a habit's check-in for a day: delete the row if it exists, else insert one
  * (docs/architecture.md §7.4). The `uniq_habit_day` unique index is the real guarantee
  * against double-taps/races. Returns the resulting state so callers can fire the right

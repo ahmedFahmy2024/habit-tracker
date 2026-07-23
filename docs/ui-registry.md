@@ -73,10 +73,16 @@ Floating action button — "add habit".
   `autoFocus?`.
 - M3 outlined style; label animates; error uses `error` role.
 
-### `ProgressRing` 🟡
+### `ProgressRing` 🟢
 Circular completion indicator (Today header).
-- **Props:** `value: 0..1`, `size?`, `celebrateOn100?: boolean`.
-- **Motion:** animates fill on change; `motion.spring.bouncy` pop at 100% + `haptic.celebrate`.
+- **Props:** `value: 0..1`, `size?`, `strokeWidth?`, `celebrateOn100?: boolean`, `label?`
+  (center content), `accessibilityLabel?`.
+- **Render:** `react-native-svg` (§library-docs §11) — a track `Circle` + a progress `Circle`
+  whose `strokeDashoffset` animates from `circumference → circumference*(1-value)` via
+  reanimated `useAnimatedProps` on `springs.default`. Track = `surfaceContainerHighest`,
+  progress = `primary`.
+- **Motion:** animates fill on change; `motion.spring.bouncy` scale pop at 100% +
+  `haptic.celebrate` (once per rising edge). Reduced motion → snap to value, no pop.
 
 ### `EmptyState` 🟢
 - **Props:** `glyph` (IconName), `title`, `body?`, `action?: { label, onPress }`.
@@ -93,22 +99,32 @@ Spec when first needed.
 
 ## Habit components (`src/ui/habit/`)
 
-### `CheckControl` 🟡 — the signature control
+### `CheckControl` 🟢 — the signature control
 Large toggle that marks a habit done.
-- **Props:** `checked: boolean`, `onToggle`, `colorKey: HabitColorKey`, `size?` (default L).
+- **Props:** `checked: boolean`, `onToggle`, `colorKey: HabitColorKey`, `label` (habit name,
+  for a11y), `size?` (default 48).
 - **Visual:** idle = outlined rounded-square (`radius.md`) in the habit accent; active =
-  filled circle (`radius.full`) with an animated drawn check.
-- **Motion:** shape morph (`md`↔`full`) + fill + check draw + `motion.scale.pop`, all on
-  `motion.spring.bouncy`. Reduced motion → cross-fade.
+  filled circle (`radius.full`, accent fill) with an animated drawn check.
+- **Render:** the morphing square/circle is an `Animated.View` (radius + `backgroundColor` +
+  `borderWidth` interpolated on a `progress` shared value); the check is a `react-native-svg`
+  `Path` whose `strokeDashoffset` animates the stroke on (§library-docs §11), drawn in
+  `onContainer`/`onPrimary`-style contrast over the accent.
+- **Motion:** shape morph (`md`↔`full`) + fill + check stroke-draw + `motion.scale.pop`, all on
+  `motion.spring.bouncy`. Reduced motion → cross-fade (progress via `timings.fast`, no pop,
+  check offset set directly).
 - **Haptics:** `haptic.check` on check, `haptic.uncheck` on uncheck.
 - **A11y:** `role="checkbox"`, `accessibilityState={{ checked }}`, label = habit name.
 
-### `HabitCard` 🟡 — Today list item
-- **Props:** `habit`, `checked`, `streak`, `onToggle`, `onOpen`.
-- **Layout:** accent-tinted `Surface` (habit container color), leading icon, `title.medium`
-  name, `label.medium` streak (e.g. "🔥 5"), trailing `CheckControl`.
-- **Two targets:** card body → `onOpen` (detail); `CheckControl` → `onToggle`. Both ≥48dp.
-- **Motion:** entrance stagger; press scale on body.
+### `HabitCard` 🟢 — Today list item
+- **Props:** `habit`, `checked`, `streak`, `streakUnit: 'days'|'weeks'`, `onToggle`, `onOpen`.
+- **Layout:** accent-tinted card (habit `container` color) — leading icon chip (accent
+  `onContainer` fill, `container` glyph), `title.medium` name, `label.medium` streak in
+  `onContainer` (e.g. "🔥 5" for days / "🔥 3 wk" for weeks; hidden when streak is 0), trailing
+  `CheckControl`. Per-habit color is the raw palette value (ui-tokens §1.3), applied via `style`.
+- **Two targets:** the card **body** `Pressable` → `onOpen` (detail); the sibling `CheckControl`
+  → `onToggle`. Both ≥48dp, non-overlapping.
+- **Motion:** entrance stagger is applied by the Today screen (`FadeInDown.delay`, capped by
+  `stagger.max`; 0 delay under reduced motion). Body press scale via `Pressable`.
 
 ### `HabitListRow` 🟢 — Habits (manage) list item
 - **Props:** `habit: Habit`, `onEdit: () => void`, `onArchive: () => void`,
@@ -161,10 +177,12 @@ Large toggle that marks a habit done.
   `createHabit`/`updateHabit` call + dismissal. `NEW_HABIT_DEFAULTS` seeds a new habit. Lives in
   `src/ui/habit/` so `habit/new.tsx` and `habit/edit/[id].tsx` stay thin (architecture §3).
 
-### `CompletionSummary` 🟡 — Today header
-- **Props:** `done`, `total`, `date`.
-- Composes `ProgressRing` + `title.large` date + count. Shows the celebratory "All done!"
-  state (`EmptyState`-like, `headline.large`) when `done === total && total > 0`.
+### `CompletionSummary` 🟢 — Today header
+- **Props:** `done`, `total`, `date` (pre-formatted, e.g. "Thursday, Jul 23").
+- Composes `ProgressRing` (with a `done/total` center label) + `title.large` date + count. When
+  `done === total && total > 0` the count line is replaced by a `headline.large` primary-color
+  "All done!"; the ring's own 100% pop + `haptic.celebrate` fire from `ProgressRing`. Presentation-
+  only (the screen derives `done`/`total`/`date`).
 
 ---
 
