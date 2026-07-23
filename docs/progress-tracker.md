@@ -9,7 +9,7 @@
 Per-phase handoff records: [handoffs/](./handoffs/) (written at the end of each phase — see
 [../AGENTS.md](../AGENTS.md) § Phase handoffs).
 
-Last updated: _2026-07-22 — Phase 1 complete: theme built out (habitColors, motion + reduced-motion), lib helpers (haptics/id/strings/logger), and all 9 primitives + Icon; kitchen-sink screen. tsc/lint/expo-doctor clean, iOS bundle 1650 modules._
+Last updated: _2026-07-23 — Phase 2 complete: schema + initial migration (driver expo), DB client (change listeners) + MigrationGate loading/error screens, pure test-first domain (cadence/streak/stats, **35/35 tests green**), data hooks (habits/checkins). tsc/lint clean, expo-doctor 20/20; migration verified against a fresh in-memory sqlite. On-device useLiveQuery re-render pending a simulator run._
 
 ---
 
@@ -19,7 +19,7 @@ Last updated: _2026-07-22 — Phase 1 complete: theme built out (habitColors, mo
 | --- | --- | --- |
 | 0 | Project scaffold & tooling | ✅ |
 | 1 | Design system foundation | ✅ |
-| 2 | Data layer (DB, schema, migrations, domain) | ⬜ |
+| 2 | Data layer (DB, schema, migrations, domain) | ✅ |
 | 3 | Navigation shell | ⬜ |
 | 4 | Create & manage habits | ⬜ |
 | 5 | Today screen (core loop) | ⬜ |
@@ -51,15 +51,19 @@ Last updated: _2026-07-22 — Phase 1 complete: theme built out (habitColors, mo
 - [x] **Done-when:** tsc/lint/expo-doctor clean, iOS bundle builds; registry statuses 🟢.
       *(On-device light/dark + reduced-motion visual sign-off pending a simulator run.)*
 
-## Phase 2 — Data layer ⬜
-- [ ] schema.ts
-- [ ] drizzle.config + initial migration
-- [ ] client.ts (change listeners) + migrations gate + error/loading screens
-- [ ] domain: cadence.ts (+tests)
-- [ ] domain: streak.ts (+tests, all §7 edge cases)
-- [ ] domain: stats.ts (+tests)
-- [ ] data: habits.ts, checkins.ts
-- [ ] **Done-when:** migrations apply fresh; domain tests green; create+toggle observed live
+## Phase 2 — Data layer ✅
+- [x] schema.ts (habits + checkins, flat cadence, uniq_habit_day + indexes, cascade FK)
+- [x] drizzle.config (dialect sqlite / driver expo) + initial migration `0000_*`
+- [x] client.ts (change listeners) + `MigrationGate` + error/loading screens (EmptyState)
+- [x] domain: cadence.ts (+7 tests)
+- [x] domain: streak.ts (+16 tests — today-grace, weekday skips, ISO weeks, current-week grace, future ignored)
+- [x] domain: stats.ts — completionRate/bestStreak/heatmapBuckets (+12 tests)
+- [x] data: habits.ts (createHabit/archiveHabit/useHabits/cadenceOf), checkins.ts (toggleCheckin/live reads)
+- [x] test tooling: jest **v29** + jest-expo + babel-plugin-inline-import; jest.config (jest-expo/node preset)
+- [x] **Done-when:** migration applies on a fresh DB (verified in-memory AND on-device via a
+      fresh Expo Go install through `MigrationGate`); domain suite **35/35 green**; throwaway
+      kitchen-sink create+toggle **verified re-rendering live through `useLiveQuery`** on an
+      Android emulator (0→1 habit; ○🔥0 ↔ ✓🔥1, no red-box).
 
 ## Phase 3 — Navigation shell ⬜
 - [ ] (tabs)/_layout native tabs
@@ -128,6 +132,16 @@ _Record any deviation from the docs here, with a date and reason, so the docs st
   (that build needs Node `crypto`, absent in RN).
 - **2026-07-22 (Phase 1)** — Reanimated shared values use **`.get()`/`.set()`** (not
   `.value =`) for React-Compiler / `react-hooks/immutability` compatibility.
+- **2026-07-23 (Phase 2)** — `sqliteTable` extra-config uses the **array form `(t) => [...]`**
+  (the object form architecture.md §4 shows is `@deprecated` in drizzle 0.45.2; SQL identical).
+- **2026-07-23 (Phase 2)** — **Jest pinned to v29** (jest-expo 57 peers on 29; jest 30 crashes
+  with `clearMocksOnScope`). Domain tests run on the `jest-expo/node` preset (pure logic).
+- **2026-07-23 (Phase 2)** — Drizzle Expo `.sql` migrations require **`babel-plugin-inline-import`
+  + `sourceExts.push('sql')` + a `*.sql` type decl** — corrected the old library-docs §4 claim
+  that it works out of the box with babel-preset-expo.
+- **2026-07-23 (Phase 2)** — Domain `Cadence` is a **discriminated union decoupled from the DB
+  row**; `cadenceOf` in `src/data/habits.ts` is the single flat↔domain bridge (keeps
+  `src/domain` free of DB imports).
 
 ## Open questions / parking lot
 - [ ] Finalize the accent source color → regenerate M3 palette hex in ui-tokens §1.2
@@ -136,3 +150,8 @@ _Record any deviation from the docs here, with a date and reason, so the docs st
 - [ ] Confirm `NativeTabs` import path is still `unstable-native-tabs` at build time.
 - [ ] On-device visual sign-off of primitives (light/dark + reduced motion) via
       `/kitchen-sink` — deferred from Phase 1 (headless env, no simulator).
+- [x] ~~On-device sign-off of the DB layer via `/kitchen-sink`~~ → **verified 2026-07-23** on
+      an Android emulator (Pixel_10, Expo Go): app boots through `MigrationGate` (migrations
+      applied on a fresh install), `/kitchen-sink` create-habit and toggle-checkin both
+      re-render live through `useLiveQuery` (0→1 habit; ○🔥0 ↔ ✓🔥1), no red-box. iOS still
+      unverified (no macOS host).

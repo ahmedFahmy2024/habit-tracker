@@ -8,7 +8,7 @@ phase's handoff (and phase 0 for the foundation) before writing code** — see
 | --- | --- | --- | --- |
 | 0 | Scaffold & tooling | ✅ | [phase-0-scaffold.md](./phase-0-scaffold.md) |
 | 1 | Design system foundation | ✅ | [phase-1-design-system.md](./phase-1-design-system.md) |
-| 2 | Data layer (DB, schema, domain) | ⬜ | — |
+| 2 | Data layer (DB, schema, domain) | ✅ | [phase-2-data-layer.md](./phase-2-data-layer.md) |
 | 3 | Navigation shell | ⬜ | — |
 | 4 | Create & manage habits | ⬜ | — |
 | 5 | Today screen | ⬜ | — |

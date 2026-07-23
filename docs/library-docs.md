@@ -63,14 +63,23 @@
 | `date-fns` | 4.4.0 | Date math | ✅ installed |
 | `zustand` | 5.0.14 | Preference state | ✅ installed |
 | `prettier` (dev) | 3.9.6 | Format (`expo lint` already wired) | ✅ installed |
-| `jest-expo`, `jest` (dev) | — | Testing | ⬜ add in Phase 2 |
+| `jest` (dev) | 29.7.0 | Test runner (**pinned v29** — jest-expo 57 is built for jest 29) | ✅ installed (Phase 2) |
+| `jest-expo` (dev) | 57.0.2 | Expo jest preset; domain tests use its `node` preset | ✅ installed (Phase 2) |
+| `@types/jest` (dev) | 29.x | jest global types (`describe`/`it`/`expect`) for tsc | ✅ installed (Phase 2) |
+| `babel-plugin-inline-import` (dev) | 3.0.0 | Inline `.sql` migrations as strings for drizzle's Expo migrator | ✅ installed (Phase 2) |
 
 Install commands used (for reference):
 ```bash
 bun add nativewind@^4.1.23 tailwindcss@^3.4.17 drizzle-orm date-fns zustand
 bunx expo install expo-sqlite expo-haptics
 bun add -d drizzle-kit prettier
+# Phase 2:
+bun add -d babel-plugin-inline-import jest@^29.7.0 jest-expo @types/jest@^29
 ```
+
+> ⚠️ **Pin jest to v29.** `jest-expo@57` peers on jest **29** (its deps are `^29.2.1`).
+> Installing jest **30** breaks with `this._moduleMocker.clearMocksOnScope is not a function`
+> at runtime — verified. Keep `jest` + `@types/jest` on `^29`.
 
 Optional / on-demand: `date-fns-tz` (only if a real tz need appears), `drizzle-studio-expo`
 (dev DB inspector).
@@ -203,8 +212,8 @@ import { openDatabaseSync } from 'expo-sqlite';
 import { drizzle } from 'drizzle-orm/expo-sqlite';
 import * as schema from './schema';
 
-export const expo = openDatabaseSync('happit.db', { enableChangeListener: true });
-export const db = drizzle(expo, { schema });
+export const expoDb = openDatabaseSync('happit.db', { enableChangeListener: true });
+export const db = drizzle(expoDb, { schema });
 ```
 > `enableChangeListener: true` is **required** for `useLiveQuery` to re-render on writes.
 
@@ -225,12 +234,35 @@ export default defineConfig({
 
 **Generate migrations:**
 ```bash
-npx drizzle-kit generate
+bunx drizzle-kit generate
 ```
 This emits SQL + a `migrations.js` bundle in `src/db/migrations/`. **Never hand-edit
-generated files.** Requires the metro/babel setup to import the generated JS bundle
-(inlineRequires / the drizzle expo migrations import work out of the box with
-`babel-preset-expo`).
+generated files.**
+
+**Metro + Babel wiring for the `.sql` import (required — NOT out of the box).** The generated
+`migrations.js` does `import m0000 from './0000_*.sql'`, so Metro must resolve `.sql` and
+Babel must inline it as a string. Verified against the drizzle Expo docs + our SDK-57 build:
+```js
+// metro.config.js
+config.resolver.sourceExts.push('sql');
+```
+```js
+// babel.config.js — BEFORE react-native-worklets/plugin (which must stay last)
+plugins: [
+  ['babel-plugin-inline-import', { extensions: ['.sql'] }],
+  'react-native-worklets/plugin',
+]
+```
+```ts
+// src/db/sql.d.ts — so tsc accepts the .sql import under strict
+declare module '*.sql' { const content: string; export default content; }
+```
+> Without `babel-plugin-inline-import` + `sourceExts`, migrations fail to bundle at runtime.
+
+**Gate the UI at boot** with `MigrationGate` (`src/db/MigrationGate.tsx`) — runs
+`useMigrations`, shows an `EmptyState` loading screen while `!success`, a recoverable error
+screen on `error`, and renders children on success (architecture.md §8). Composed in
+`src/app/_layout.tsx` right under `GestureHandlerRootView`.
 
 **Apply at boot (gates the UI):**
 ```ts

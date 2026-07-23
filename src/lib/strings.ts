@@ -26,4 +26,12 @@ export const strings = {
     genericTitle: "Nothing here yet",
     genericBody: "When there's something to show, it'll appear here.",
   },
+  /** Migration gate — the loading/error screens shown at boot (docs/architecture.md §8). */
+  migration: {
+    loadingTitle: "Setting things up",
+    loadingBody: "Preparing your habits…",
+    errorTitle: "Couldn't start the database",
+    errorBody:
+      "Something went wrong preparing your data. Restart the app to try again.",
+  },
 } as const;
